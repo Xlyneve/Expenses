@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Item Cost Tracker</title>
+<style>
+@font-face {
+  font-family: 'LovelyCoffee';
+  src: url('LovelyCoffee.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'LouisGeorgeCafe';
+  src: url('LouisGeorgeCafe.ttf') format('truetype');
+}
+
+  body {
+  font-family: 'LouisGeorgecafe', sans-serif;
+  background: url('watercolor.png') repeat;
+  background-position: top left;
+  background-attachment: fixed;
+  background-color: white; /* fallback color */
+  margin: 0;
+  padding: 20px;
+  color: #333;
+}
+
+  h1 {
+    font-family: 'LovelyCoffee', cursive;
+	font-size: 100px;
+    text-align: center;
+    margin-top: 10px;
+	margin-bottom: 10px; /* Smaller bottom space */
+	line-height: 1.2; /* Keeps vertical space tighter */
+  }
+  form {
+    max-width: 400px;
+    margin: 0 auto 30px auto;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  input[type="text"], input[type="number"] {
+    font-family: 'LouisGeorgecafe', sans-serif;
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    flex: 1 1 150px;
+  }
+  button {
+    padding: 8px 20px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: none;
+    background-color: #f0ebf2;
+    color: black;
+    cursor: pointer;
+    flex: 1 1 100px;
+  }
+  button:hover {
+    background-color: #e9f7f0;
+  }
+  table {
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    border-collapse: collapse;
+    background: transparent;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  th, td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+  }
+  th {
+    background-color: #f9f7f0;
+    color: black;
+  }
+  #total {
+    max-width: 600px;
+    margin: 20px auto;
+    font-weight: bold;
+    font-size: 18px;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+
+<h1>Item Cost Tracker</h1>
+
+<form id="itemForm">
+  <input type="text" id="itemName" placeholder="Item Name" required />
+  <input type="number" id="itemCost" placeholder="Cost" required min="0" step="0.01" />
+  <button type="submit">Add Item</button>
+</form>
+
+<table id="itemsTable">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Cost ($)</th>
+      <th>Paid</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<div id="total">Total Cost: $0.00</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+  // Paste your Firebase config here:
+  const firebaseConfig = {
+  apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+  authDomain: "expenses-a18fa.firebaseapp.com",
+  projectId: "expenses-a18fa",
+  storageBucket: "expenses-a18fa.firebasestorage.app",
+  messagingSenderId: "710897249151",
+  appId: "1:710897249151:web:10a31240f099d8e328c84a",
+  measurementId: "G-Z0TNKB1L00"
+};
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  const form = document.getElementById('itemForm');
+  const itemNameInput = document.getElementById('itemName');
+  const itemCostInput = document.getElementById('itemCost');
+  const itemsTableBody = document.querySelector('#itemsTable tbody');
+  const totalDiv = document.getElementById('total');
+
+  // Add new item to Firestore
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const name = itemNameInput.value.trim();
+    const cost = parseFloat(itemCostInput.value);
+    if (name && !isNaN(cost) && cost >= 0) {
+      db.collection('items').add({
+        name,
+        cost,
+        paid: false,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      itemNameInput.value = '';
+      itemCostInput.value = '';
+    }
+  });
+
+  // Function to render items in table
+  function renderItems(items) {
+    itemsTableBody.innerHTML = '';
+    let totalCost = 0;
+    items.forEach(doc => {
+      const item = doc.data();
+      const tr = document.createElement('tr');
+      
+      const tdName = document.createElement('td');
+      tdName.textContent = item.name;
+      
+      const tdCost = document.createElement('td');
+      tdCost.textContent = item.cost.toFixed(2);
+
+      const tdPaid = document.createElement('td');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = item.paid;
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          // Delete item from firestore when paid ticked
+          db.collection('items').doc(doc.id).delete();
+        }
+      });
+      tdPaid.appendChild(checkbox);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdCost);
+      tr.appendChild(tdPaid);
+      itemsTableBody.appendChild(tr);
+
+      if (!item.paid) {
+        totalCost += item.cost;
+      }
+    });
+    totalDiv.textContent = `Total Cost: $${totalCost.toFixed(2)}`;
+  }
+
+  // Listen for real-time updates
+  db.collection('items').orderBy('createdAt').onSnapshot(snapshot => {
+    renderItems(snapshot.docs);
+  });
+</script>
+
+</body>
+</html>
