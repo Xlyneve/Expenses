@@ -18,7 +18,7 @@
   body {
   font-family: 'LouisGeorgecafe', sans-serif;
   background: url('watercolor.png') repeat;
-  background-size: auto; 
+  background-size: auto;
   background-position: top;
   background-attachment: scroll;
   background-color: white; /* fallback color */
@@ -93,7 +93,7 @@
 </head>
 <body>
 
-<h1>Credit Card Expenses</h1>
+<h1>Credit card Expenses</h1>
 
 <form id="itemForm">
   <input type="text" id="itemName" placeholder="Item Name" required />
@@ -159,41 +159,67 @@
 
   // Function to render items in table
   function renderItems(items) {
-    itemsTableBody.innerHTML = '';
-    let totalCost = 0;
-    items.forEach(doc => {
-      const item = doc.data();
-      const tr = document.createElement('tr');
-      
-      const tdName = document.createElement('td');
-      tdName.textContent = item.name;
-      
-      const tdCost = document.createElement('td');
-      tdCost.textContent = item.cost.toFixed(2);
+  itemsTableBody.innerHTML = '';
+  let totalCost = 0;
+  items.forEach(doc => {
+    const item = doc.data();
+    const tr = document.createElement('tr');
+    
+    // Name cell with timestamp below in smaller font
+    const tdName = document.createElement('td');
+    tdName.style.textAlign = 'left'; // align left for nicer layout
+    
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = item.name;
+    nameDiv.style.fontWeight = 'bold';
 
-      const tdPaid = document.createElement('td');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.checked = item.paid;
-      checkbox.addEventListener('change', () => {
-        if (checkbox.checked) {
-          // Delete item from firestore when paid ticked
-          db.collection('items').doc(doc.id).delete();
-        }
-      });
-      tdPaid.appendChild(checkbox);
+    const timeDiv = document.createElement('div');
+    timeDiv.style.fontSize = '0.75em';
+    timeDiv.style.color = '#666';
+    timeDiv.style.marginTop = '3px';
 
-      tr.appendChild(tdName);
-      tr.appendChild(tdCost);
-      tr.appendChild(tdPaid);
-      itemsTableBody.appendChild(tr);
+    if (item.createdAt && item.createdAt.toDate) {
+      const date = item.createdAt.toDate();
+      // Format as: "Jun 6, 12:45 PM"
+      const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+      timeDiv.textContent = date.toLocaleString(undefined, options);
+    } else {
+      timeDiv.textContent = '...'; // placeholder while loading
+    }
 
-      if (!item.paid) {
-        totalCost += item.cost;
+    tdName.appendChild(nameDiv);
+    tdName.appendChild(timeDiv);
+
+    // Cost cell
+    const tdCost = document.createElement('td');
+    tdCost.textContent = item.cost.toFixed(2);
+    tdCost.style.textAlign = 'center';
+
+    // Paid checkbox cell
+    const tdPaid = document.createElement('td');
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = item.paid;
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        db.collection('items').doc(doc.id).delete();
       }
     });
-    totalDiv.textContent = `Total Cost: $${totalCost.toFixed(2)}`;
-  }
+    tdPaid.appendChild(checkbox);
+    tdPaid.style.textAlign = 'center';
+
+    tr.appendChild(tdName);
+    tr.appendChild(tdCost);
+    tr.appendChild(tdPaid);
+    itemsTableBody.appendChild(tr);
+
+    if (!item.paid) {
+      totalCost += item.cost;
+    }
+  });
+  totalDiv.textContent = `Total Cost: $${totalCost.toFixed(2)}`;
+}
+
 
   // Listen for real-time updates
   db.collection('items').orderBy('createdAt').onSnapshot(snapshot => {
