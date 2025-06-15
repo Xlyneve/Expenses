@@ -5,36 +5,46 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Item Cost Tracker</title>
 <style>
-@font-face {
-  font-family: 'LovelyCoffee';
-  src: url('LovelyCoffee.ttf') format('truetype');
-}
+  @font-face {
+    font-family: 'LovelyCoffee';
+    src: url('LovelyCoffee.ttf') format('truetype');
+  }
 
-@font-face {
-  font-family: 'LouisGeorgeCafe';
-  src: url('LouisGeorgeCafe.ttf') format('truetype');
-}
+  @font-face {
+    font-family: 'LouisGeorgeCafe';
+    src: url('LouisGeorgeCafe.ttf') format('truetype');
+  }
 
   body {
-  font-family: 'LouisGeorgecafe', sans-serif;
-  background: url('watercolor.png') repeat;
-  background-size: auto;
-  background-position: top;
-  background-attachment: scroll;
-  background-color: white; /* fallback color */
-  margin: 0;
-  padding: 20px;
-  color: #333;
-}
+    font-family: 'LouisGeorgecafe', sans-serif;
+    background: url('watercolor.png') repeat;
+    background-size: auto;
+    background-position: top;
+    background-attachment: scroll;
+    background-color: white; /* fallback color */
+    margin: 0;
+    padding: 20px;
+    color: #333;
+  }
 
   h1 {
     font-family: 'LovelyCoffee', cursive;
-	font-size: 100px;
+    font-size: 100px;
     text-align: center;
     margin-top: 10px;
-	margin-bottom: 10px; /* Smaller bottom space */
-	line-height: 1.2; /* Keeps vertical space tighter */
+    margin-bottom: 10px;
+    line-height: 1.2;
   }
+
+  h2 {
+    font-family: 'LovelyCoffee', cursive;
+    font-size: 50px;
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    line-height: 1.2;
+  }
+
   form {
     max-width: 400px;
     margin: 0 auto 30px auto;
@@ -43,7 +53,9 @@
     flex-wrap: wrap;
     justify-content: center;
   }
-  input[type="text"], input[type="number"] {
+
+  input[type="text"],
+  input[type="number"] {
     font-family: 'LouisGeorgecafe', sans-serif;
     padding: 8px;
     font-size: 16px;
@@ -51,43 +63,79 @@
     border: 1px solid #ccc;
     flex: 1 1 150px;
   }
-  button {
-    padding: 8px 20px;
-    font-size: 16px;
+
+  button, .delete-btn {
+    padding: 6px 10px;
+    font-size: 8x;
     border-radius: 5px;
     border: none;
-    background-color: #f0ebf2;
+    background-color: #ebebeb;
     color: black;
     cursor: pointer;
     flex: 1 1 100px;
   }
-  button:hover {
+
+  button:hover, .delete-btn:hover {
     background-color: #e9f7f0;
   }
+
+  .delete-btn {
+    padding: 4px 10px;
+    font-size: 10px;
+    flex: none;
+    background-color: #ebebeb;
+    color: black;
+    border-radius: 4px;
+    margin-left: 10px;
+  }
+
+  .delete-btn:hover {
+    background-color: #cc0000;
+  }
+
   table {
     width: 100%;
-    max-width: 600px;
+    max-width: 700px;
     margin: 0 auto;
     border-collapse: collapse;
     background: transparent;
     border-radius: 10px;
     overflow: hidden;
   }
-  th, td {
+
+  th,
+  td {
     padding: 10px;
     border-bottom: 1px solid #ddd;
     text-align: center;
+    vertical-align: middle;
   }
+
   th {
     background-color: #f9f7f0;
     color: black;
   }
+
+  td.name-cell {
+    text-align: left;
+  }
+
+  td .date-added {
+    font-size: 0.75em;
+    color: #666;
+    margin-top: 3px;
+  }
+
   #total {
-    max-width: 600px;
+    max-width: 700px;
     margin: 20px auto;
     font-weight: bold;
     font-size: 18px;
     text-align: right;
+  }
+
+  #archivedTitle {
+    margin-top: 40px;
   }
 </style>
 </head>
@@ -101,34 +149,53 @@
   <button type="submit">Add Item</button>
 </form>
 
+<h2>Active Items</h2>
 <table id="itemsTable">
   <thead>
     <tr>
       <th>Item</th>
       <th>Cost ($)</th>
-      <th>Paid</th>
+      <th>Paid ($)</th>
+      <th>Remaining ($)</th>
+      <th>Pay Amount</th>
+      <th>Fully Paid</th>
+      <th>Action</th>
     </tr>
   </thead>
   <tbody></tbody>
 </table>
 
-<div id="total">Total Cost: $0.00</div>
+<div id="total">Total Remaining: $0.00</div>
+
+<h2 id="archivedTitle">Archived Items (Fully Paid)</h2>
+<table id="archivedTable">
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Cost ($)</th>
+      <th>Paid ($)</th>
+      <th>Date Added</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Paste your Firebase config here:
+  // Firebase config
   const firebaseConfig = {
-  apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
-  authDomain: "expenses-a18fa.firebaseapp.com",
-  projectId: "expenses-a18fa",
-  storageBucket: "expenses-a18fa.firebasestorage.app",
-  messagingSenderId: "710897249151",
-  appId: "1:710897249151:web:10a31240f099d8e328c84a",
-  measurementId: "G-Z0TNKB1L00"
-};
+    apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+    authDomain: "expenses-a18fa.firebaseapp.com",
+    projectId: "expenses-a18fa",
+    storageBucket: "expenses-a18fa.firebasestorage.app",
+    messagingSenderId: "710897249151",
+    appId: "1:710897249151:web:10a31240f099d8e328c84a",
+    measurementId: "G-Z0TNKB1L00"
+  };
 
   // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
@@ -138,9 +205,9 @@
   const itemNameInput = document.getElementById('itemName');
   const itemCostInput = document.getElementById('itemCost');
   const itemsTableBody = document.querySelector('#itemsTable tbody');
+  const archivedTableBody = document.querySelector('#archivedTable tbody');
   const totalDiv = document.getElementById('total');
 
-  // Add new item to Firestore
   form.addEventListener('submit', e => {
     e.preventDefault();
     const name = itemNameInput.value.trim();
@@ -149,7 +216,8 @@
       db.collection('items').add({
         name,
         cost,
-        paid: false,
+        paid: 0,
+        archived: false,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       itemNameInput.value = '';
@@ -157,73 +225,212 @@
     }
   });
 
-  // Function to render items in table
-  function renderItems(items) {
-  itemsTableBody.innerHTML = '';
-  let totalCost = 0;
-  items.forEach(doc => {
-    const item = doc.data();
-    const tr = document.createElement('tr');
-    
-    // Name cell with timestamp below in smaller font
-    const tdName = document.createElement('td');
-    tdName.style.textAlign = 'left'; // align left for nicer layout
-    
-    const nameDiv = document.createElement('div');
-    nameDiv.textContent = item.name;
-    nameDiv.style.fontWeight = 'bold';
+  // Render active items
+  function renderActiveItems(items) {
+    itemsTableBody.innerHTML = '';
+    let totalRemaining = 0;
 
-    const timeDiv = document.createElement('div');
-    timeDiv.style.fontSize = '0.75em';
-    timeDiv.style.color = '#666';
-    timeDiv.style.marginTop = '3px';
+    items.forEach(doc => {
+      const item = doc.data();
+      const id = doc.id;
 
-    if (item.createdAt && item.createdAt.toDate) {
-      const date = item.createdAt.toDate();
-      // Format as: "Jun 6, 12:45 PM"
-      const options = { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-      timeDiv.textContent = date.toLocaleString(undefined, options);
-    } else {
-      timeDiv.textContent = '...'; // placeholder while loading
-    }
+      const paid = item.paid || 0;
+      const cost = item.cost || 0;
+      const remaining = Math.max(cost - paid, 0);
+      const isFullyPaid = paid >= cost;
 
-    tdName.appendChild(nameDiv);
-    tdName.appendChild(timeDiv);
+      const tr = document.createElement('tr');
 
-    // Cost cell
-    const tdCost = document.createElement('td');
-    tdCost.textContent = item.cost.toFixed(2);
-    tdCost.style.textAlign = 'center';
+      // Name + date added
+      const tdName = document.createElement('td');
+      tdName.classList.add('name-cell');
 
-    // Paid checkbox cell
-    const tdPaid = document.createElement('td');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = item.paid;
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked) {
-        db.collection('items').doc(doc.id).delete();
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = item.name;
+      nameDiv.style.fontWeight = 'bold';
+
+      const dateDiv = document.createElement('div');
+      dateDiv.classList.add('date-added');
+      if (item.createdAt && item.createdAt.toDate) {
+        dateDiv.textContent = item.createdAt.toDate().toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      } else {
+        dateDiv.textContent = '...';
       }
+
+      tdName.appendChild(nameDiv);
+      tdName.appendChild(dateDiv);
+      tr.appendChild(tdName);
+
+      // Cost cell
+      const tdCost = document.createElement('td');
+      tdCost.textContent = cost.toFixed(2);
+      tr.appendChild(tdCost);
+
+      // Paid cell
+      const tdPaid = document.createElement('td');
+      tdPaid.textContent = paid.toFixed(2);
+      tr.appendChild(tdPaid);
+
+      // Remaining cell (bold)
+      const tdRemaining = document.createElement('td');
+      tdRemaining.innerHTML = `<b>$${remaining.toFixed(2)}</b>`;
+      tr.appendChild(tdRemaining);
+
+      // Pay amount input
+      const tdPayInput = document.createElement('td');
+      const payInput = document.createElement('input');
+      payInput.type = 'number';
+      payInput.min = 0;
+      payInput.step = '0.01';
+      payInput.placeholder = '0.00';
+      payInput.style.width = '80px';
+      if (isFullyPaid) {
+        payInput.disabled = true;
+      }
+      tdPayInput.appendChild(payInput);
+      tr.appendChild(tdPayInput);
+
+      // Fully paid checkbox
+      const tdCheckbox = document.createElement('td');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = isFullyPaid;
+      checkbox.disabled = true; // disable manual toggle, control auto
+      tdCheckbox.appendChild(checkbox);
+      tr.appendChild(tdCheckbox);
+
+      // Delete button
+      const tdDelete = document.createElement('td');
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.classList.add('delete-btn');
+      deleteBtn.addEventListener('click', () => {
+        if (confirm(`Delete "${item.name}"? This action cannot be undone.`)) {
+          db.collection('items').doc(id).delete()
+            .catch(err => alert('Delete failed: ' + err.message));
+        }
+      });
+      tdDelete.appendChild(deleteBtn);
+      tr.appendChild(tdDelete);
+
+      // Pay input event listener
+      payInput.addEventListener('change', () => {
+        let payment = parseFloat(payInput.value);
+        if (isNaN(payment) || payment <= 0) {
+          alert('Enter a valid positive payment amount');
+          payInput.value = '';
+          return;
+        }
+        if (payment > remaining) {
+          alert(`Cannot pay more than remaining amount: $${remaining.toFixed(2)}`);
+          payInput.value = '';
+          return;
+        }
+        // Update paid amount
+        const newPaid = paid + payment;
+
+        let updateData = {
+          paid: newPaid
+        };
+
+        // If fully paid, mark archived
+        if (newPaid >= cost) {
+          updateData.archived = true;
+        }
+
+        db.collection('items').doc(id).update(updateData)
+          .then(() => {
+            payInput.value = '';
+          })
+          .catch(error => {
+            alert('Error updating payment: ' + error.message);
+          });
+      });
+
+      itemsTableBody.appendChild(tr);
+
+      totalRemaining += remaining;
     });
-    tdPaid.appendChild(checkbox);
-    tdPaid.style.textAlign = 'center';
 
-    tr.appendChild(tdName);
-    tr.appendChild(tdCost);
-    tr.appendChild(tdPaid);
-    itemsTableBody.appendChild(tr);
+    totalDiv.textContent = `Total Remaining: $${totalRemaining.toFixed(2)}`;
+  }
 
-    if (!item.paid) {
-      totalCost += item.cost;
-    }
-  });
-  totalDiv.textContent = `Total Cost: $${totalCost.toFixed(2)}`;
-}
+  // Render archived items (fully paid)
+  function renderArchivedItems(items) {
+    archivedTableBody.innerHTML = '';
 
+    items.forEach(doc => {
+      const item = doc.data();
+      const id = doc.id;
+
+      const tr = document.createElement('tr');
+
+      // Name + date added
+      const tdName = document.createElement('td');
+      tdName.classList.add('name-cell');
+      const nameDiv = document.createElement('div');
+      nameDiv.textContent = item.name;
+      nameDiv.style.fontWeight = 'bold';
+      tdName.appendChild(nameDiv);
+      tr.appendChild(tdName);
+
+      // Cost cell
+      const tdCost = document.createElement('td');
+      tdCost.textContent = (item.cost || 0).toFixed(2);
+      tr.appendChild(tdCost);
+
+      // Paid cell
+      const tdPaid = document.createElement('td');
+      tdPaid.textContent = (item.paid || 0).toFixed(2);
+      tr.appendChild(tdPaid);
+
+      // Date added cell
+      const tdDate = document.createElement('td');
+      if (item.createdAt && item.createdAt.toDate) {
+        tdDate.textContent = item.createdAt.toDate().toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      } else {
+        tdDate.textContent = '...';
+      }
+      tr.appendChild(tdDate);
+
+      // Delete button
+      const tdDelete = document.createElement('td');
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.classList.add('delete-btn');
+      deleteBtn.addEventListener('click', () => {
+        if (confirm(`Delete archived item "${item.name}"? This action cannot be undone.`)) {
+          db.collection('items').doc(id).delete()
+            .catch(err => alert('Delete failed: ' + err.message));
+        }
+      });
+      tdDelete.appendChild(deleteBtn);
+      tr.appendChild(tdDelete);
+
+      archivedTableBody.appendChild(tr);
+    });
+  }
 
   // Listen for real-time updates
   db.collection('items').orderBy('createdAt').onSnapshot(snapshot => {
-    renderItems(snapshot.docs);
+    const activeItems = [];
+    const archivedItems = [];
+
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.archived) {
+        archivedItems.push(doc);
+      } else {
+        activeItems.push(doc);
+      }
+    });
+
+    renderActiveItems(activeItems);
+    renderArchivedItems(archivedItems);
   });
 </script>
 
