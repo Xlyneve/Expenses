@@ -1,143 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Item Cost Tracker</title>
-<style>
-  @font-face {
-    font-family: 'LovelyCoffee';
-    src: url('LovelyCoffee.ttf') format('truetype');
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Credit Card Expenses</title>
+  <style>
+    @font-face {
+      font-family: 'LovelyCoffee';
+      src: url('LovelyCoffee.ttf') format('truetype');
+    }
 
-  @font-face {
-    font-family: 'LouisGeorgeCafe';
-    src: url('LouisGeorgeCafe.ttf') format('truetype');
-  }
+    @font-face {
+      font-family: 'LouisGeorgeCafe';
+      src: url('LouisGeorgeCafe.ttf') format('truetype');
+    }
 
-  body {
-    font-family: 'LouisGeorgecafe', sans-serif;
-    background: url('watercolor.png') repeat;
-    background-size: auto;
-    background-position: top;
-    background-attachment: scroll;
-    background-color: white; /* fallback color */
-    margin: 0;
-    padding: 20px;
-    color: #333;
-  }
+    body {
+      font-family: 'LouisGeorgeCafe', sans-serif;
+      background: url('watercolor.png') repeat;
+      background-color: white;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
 
-  h1 {
-    font-family: 'LovelyCoffee', cursive;
-    font-size: 100px;
-    text-align: center;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    line-height: 1.2;
-  }
+    h1 {
+      font-family: 'LovelyCoffee', cursive;
+      font-size: 80px;
+      text-align: center;
+      margin: 10px 0;
+      line-height: 1.2;
+    }
 
-  h2 {
-    font-family: 'LovelyCoffee', cursive;
-    font-size: 50px;
-    text-align: center;
-    margin-top: 30px;
-    margin-bottom: 10px;
-    line-height: 1.2;
-  }
+    h2, #archivedTitle, #itemsTable, #archivedTable {
+      font-family: Tahoma, sans-serif;
+    }
 
-  form {
-    max-width: 400px;
-    margin: 0 auto 30px auto;
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
+    h2 {
+      font-size: 30px;
+      text-align: center;
+      margin-top: 30px;
+      margin-bottom: 10px;
+    }
 
-  input[type="text"],
-  input[type="number"] {
-    font-family: 'LouisGeorgecafe', sans-serif;
-    padding: 8px;
-    font-size: 16px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    flex: 1 1 150px;
-  }
+    form {
+      max-width: 400px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
 
-  button, .delete-btn {
-    padding: 6px 10px;
-    font-size: 8x;
-    border-radius: 5px;
-    border: none;
-    background-color: #ebebeb;
-    color: black;
-    cursor: pointer;
-    flex: 1 1 100px;
-  }
+    input[type="text"],
+    input[type="number"] {
+      font-family: Tahoma, sans-serif;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      flex: 1 1 150px;
+    }
 
-  button:hover, .delete-btn:hover {
-    background-color: #e9f7f0;
-  }
+    button, .delete-btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 5px;
+      border: none;
+      background-color: #ebebeb;
+      color: black;
+      cursor: pointer;
+    }
 
-  .delete-btn {
-    padding: 4px 10px;
-    font-size: 10px;
-    flex: none;
-    background-color: #ebebeb;
-    color: black;
-    border-radius: 4px;
-    margin-left: 10px;
-  }
+    button:hover, .delete-btn:hover {
+      background-color: #e9f7f0;
+    }
 
-  .delete-btn:hover {
-    background-color: #cc0000;
-  }
+    .delete-btn:hover {
+      background-color: #cc0000;
+      color: white;
+    }
 
-  table {
-    width: 100%;
-    max-width: 700px;
-    margin: 0 auto;
-    border-collapse: collapse;
-    background: transparent;
-    border-radius: 10px;
-    overflow: hidden;
-  }
+    table {
+      width: 100%;
+      max-width: 700px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      font-family: Tahoma, sans-serif;
+    }
 
-  th,
-  td {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    text-align: center;
-    vertical-align: middle;
-  }
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
 
-  th {
-    background-color: #f9f7f0;
-    color: black;
-  }
+    td.name-cell {
+      text-align: left;
+    }
 
-  td.name-cell {
-    text-align: left;
-  }
+    td .date-added {
+      font-size: 0.75em;
+      color: #666;
+      margin-top: 3px;
+    }
 
-  td .date-added {
-    font-size: 0.75em;
-    color: #666;
-    margin-top: 3px;
-  }
+    #total {
+      max-width: 700px;
+      margin: 20px auto;
+      font-weight: bold;
+      font-size: 12px;
+      text-align: right;
+      font-family: Tahoma, sans-serif;
+    }
 
-  #total {
-    max-width: 700px;
-    margin: 20px auto;
-    font-weight: bold;
-    font-size: 18px;
-    text-align: right;
-  }
+    /* Mobile responsiveness */
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+      }
 
-  #archivedTitle {
-    margin-top: 40px;
-  }
-</style>
+      thead {
+        display: none;
+      }
+
+      tr {
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        padding: 10px;
+        background: #fff;
+      }
+
+      td {
+        text-align: left;
+        padding: 8px 10px;
+        font-size: 12px;
+        border: none;
+        border-bottom: 1px solid #eee;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+      }
+
+      input[type="number"] {
+        width: 100%;
+      }
+
+      #total {
+        text-align: center;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -159,7 +179,7 @@
       <th>Remaining ($)</th>
       <th>Pay Amount</th>
       <th>Fully Paid</th>
-      <th>Action</th>
+      <th>Actions</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -181,23 +201,21 @@
   <tbody></tbody>
 </table>
 
-<!-- Firebase SDK -->
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
 <script>
-  // Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
     authDomain: "expenses-a18fa.firebaseapp.com",
     projectId: "expenses-a18fa",
-    storageBucket: "expenses-a18fa.firebasestorage.app",
+    storageBucket: "expenses-a18fa.appspot.com",
     messagingSenderId: "710897249151",
     appId: "1:710897249151:web:10a31240f099d8e328c84a",
     measurementId: "G-Z0TNKB1L00"
   };
 
-  // Initialize Firebase
   firebase.initializeApp(firebaseConfig);
   const db = firebase.firestore();
 
@@ -218,6 +236,7 @@
         cost,
         paid: 0,
         archived: false,
+        lastPayments: [],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       itemNameInput.value = '';
@@ -225,7 +244,6 @@
     }
   });
 
-  // Render active items
   function renderActiveItems(items) {
     itemsTableBody.innerHTML = '';
     let totalRemaining = 0;
@@ -234,88 +252,102 @@
       const item = doc.data();
       const id = doc.id;
 
-      const paid = item.paid || 0;
-      const cost = item.cost || 0;
+      const paid = parseFloat(item.paid) || 0;
+      const cost = parseFloat(item.cost) || 0;
       const remaining = Math.max(cost - paid, 0);
-      const isFullyPaid = paid >= cost;
+      const isFullyPaid = cost - paid <= 0.001;
 
       const tr = document.createElement('tr');
 
-      // Name + date added
       const tdName = document.createElement('td');
       tdName.classList.add('name-cell');
-
+      tdName.setAttribute('data-label', 'Item');
       const nameDiv = document.createElement('div');
       nameDiv.textContent = item.name;
       nameDiv.style.fontWeight = 'bold';
-
       const dateDiv = document.createElement('div');
       dateDiv.classList.add('date-added');
-      if (item.createdAt && item.createdAt.toDate) {
+      if (item.createdAt?.toDate) {
         dateDiv.textContent = item.createdAt.toDate().toLocaleString(undefined, {
           month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         });
-      } else {
-        dateDiv.textContent = '...';
       }
-
       tdName.appendChild(nameDiv);
       tdName.appendChild(dateDiv);
       tr.appendChild(tdName);
 
-      // Cost cell
       const tdCost = document.createElement('td');
       tdCost.textContent = cost.toFixed(2);
+      tdCost.setAttribute('data-label', 'Cost');
       tr.appendChild(tdCost);
 
-      // Paid cell
       const tdPaid = document.createElement('td');
       tdPaid.textContent = paid.toFixed(2);
+      tdPaid.setAttribute('data-label', 'Paid');
       tr.appendChild(tdPaid);
 
-      // Remaining cell (bold)
       const tdRemaining = document.createElement('td');
       tdRemaining.innerHTML = `<b>$${remaining.toFixed(2)}</b>`;
+      tdRemaining.setAttribute('data-label', 'Remaining');
       tr.appendChild(tdRemaining);
 
-      // Pay amount input
       const tdPayInput = document.createElement('td');
+      tdPayInput.setAttribute('data-label', 'Pay');
       const payInput = document.createElement('input');
       payInput.type = 'number';
       payInput.min = 0;
       payInput.step = '0.01';
       payInput.placeholder = '0.00';
       payInput.style.width = '80px';
-      if (isFullyPaid) {
-        payInput.disabled = true;
-      }
+      payInput.disabled = isFullyPaid;
       tdPayInput.appendChild(payInput);
       tr.appendChild(tdPayInput);
 
-      // Fully paid checkbox
       const tdCheckbox = document.createElement('td');
+      tdCheckbox.setAttribute('data-label', 'Fully Paid');
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
       checkbox.checked = isFullyPaid;
-      checkbox.disabled = true; // disable manual toggle, control auto
+      checkbox.disabled = !isFullyPaid;
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked && isFullyPaid) {
+          db.collection('items').doc(id).update({ archived: true });
+        }
+      });
       tdCheckbox.appendChild(checkbox);
       tr.appendChild(tdCheckbox);
 
-      // Delete button
-      const tdDelete = document.createElement('td');
+      const tdActions = document.createElement('td');
+      tdActions.setAttribute('data-label', 'Actions');
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Delete';
       deleteBtn.classList.add('delete-btn');
       deleteBtn.addEventListener('click', () => {
-        if (confirm(`Delete "${item.name}"? This action cannot be undone.`)) {
-          db.collection('items').doc(id).delete()
-            .catch(err => alert('Delete failed: ' + err.message));
+        if (confirm(`Delete "${item.name}"?`)) {
+          db.collection('items').doc(id).delete();
         }
       });
-      tdDelete.appendChild(deleteBtn);
-      tr.appendChild(tdDelete);
+      tdActions.appendChild(deleteBtn);
 
-      // Pay input event listener
+      if (item.lastPayments?.length > 0) {
+        const undoBtn = document.createElement('button');
+        undoBtn.textContent = 'Undo';
+        undoBtn.classList.add('delete-btn');
+        undoBtn.addEventListener('click', () => {
+          const last = item.lastPayments[item.lastPayments.length - 1];
+          const updatedPaid = paid - last.amount;
+          const updatedLog = item.lastPayments.slice(0, -1);
+          db.collection('items').doc(id).update({
+            paid: updatedPaid,
+            archived: false,
+            lastPayments: updatedLog
+          }).then(() => alert(`Undid $${last.amount.toFixed(2)} payment`));
+        });
+        tdActions.appendChild(undoBtn);
+      }
+
+      tr.appendChild(tdActions);
+
       payInput.addEventListener('change', () => {
         let payment = parseFloat(payInput.value);
         if (isNaN(payment) || payment <= 0) {
@@ -323,89 +355,67 @@
           payInput.value = '';
           return;
         }
-        if (payment > remaining) {
-          alert(`Cannot pay more than remaining amount: $${remaining.toFixed(2)}`);
+        if (payment > remaining + 0.001) {
+          alert(`Cannot pay more than remaining: $${remaining.toFixed(2)}`);
           payInput.value = '';
           return;
         }
-        // Update paid amount
-        const newPaid = paid + payment;
 
-        let updateData = {
-          paid: newPaid
+        const newPaid = paid + payment;
+        const isNowFullyPaid = cost - newPaid <= 0.001;
+
+        const updateData = {
+          paid: newPaid,
+          archived: isNowFullyPaid,
+          lastPayments: firebase.firestore.FieldValue.arrayUnion({
+            amount: payment,
+            date: new Date().toISOString()
+          })
         };
 
-        // If fully paid, mark archived
-        if (newPaid >= cost) {
-          updateData.archived = true;
-        }
-
         db.collection('items').doc(id).update(updateData)
-          .then(() => {
-            payInput.value = '';
-          })
-          .catch(error => {
-            alert('Error updating payment: ' + error.message);
-          });
+          .then(() => { payInput.value = ''; })
+          .catch(error => alert('Error updating payment: ' + error.message));
       });
 
-      itemsTableBody.appendChild(tr);
-
       totalRemaining += remaining;
+      itemsTableBody.appendChild(tr);
     });
 
     totalDiv.textContent = `Total Remaining: $${totalRemaining.toFixed(2)}`;
   }
 
-  // Render archived items (fully paid)
   function renderArchivedItems(items) {
     archivedTableBody.innerHTML = '';
-
     items.forEach(doc => {
       const item = doc.data();
       const id = doc.id;
 
       const tr = document.createElement('tr');
-
-      // Name + date added
       const tdName = document.createElement('td');
-      tdName.classList.add('name-cell');
-      const nameDiv = document.createElement('div');
-      nameDiv.textContent = item.name;
-      nameDiv.style.fontWeight = 'bold';
-      tdName.appendChild(nameDiv);
+      tdName.textContent = item.name;
+      tdName.style.fontWeight = 'bold';
       tr.appendChild(tdName);
 
-      // Cost cell
       const tdCost = document.createElement('td');
       tdCost.textContent = (item.cost || 0).toFixed(2);
       tr.appendChild(tdCost);
 
-      // Paid cell
       const tdPaid = document.createElement('td');
       tdPaid.textContent = (item.paid || 0).toFixed(2);
       tr.appendChild(tdPaid);
 
-      // Date added cell
       const tdDate = document.createElement('td');
-      if (item.createdAt && item.createdAt.toDate) {
-        tdDate.textContent = item.createdAt.toDate().toLocaleString(undefined, {
-          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-        });
-      } else {
-        tdDate.textContent = '...';
-      }
+      tdDate.textContent = item.createdAt?.toDate().toLocaleString() || '...';
       tr.appendChild(tdDate);
 
-      // Delete button
       const tdDelete = document.createElement('td');
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Delete';
       deleteBtn.classList.add('delete-btn');
       deleteBtn.addEventListener('click', () => {
-        if (confirm(`Delete archived item "${item.name}"? This action cannot be undone.`)) {
-          db.collection('items').doc(id).delete()
-            .catch(err => alert('Delete failed: ' + err.message));
+        if (confirm(`Delete "${item.name}"?`)) {
+          db.collection('items').doc(id).delete();
         }
       });
       tdDelete.appendChild(deleteBtn);
@@ -415,20 +425,13 @@
     });
   }
 
-  // Listen for real-time updates
   db.collection('items').orderBy('createdAt').onSnapshot(snapshot => {
-    const activeItems = [];
-    const archivedItems = [];
-
+    const activeItems = [], archivedItems = [];
     snapshot.docs.forEach(doc => {
       const data = doc.data();
-      if (data.archived) {
-        archivedItems.push(doc);
-      } else {
-        activeItems.push(doc);
-      }
+      if (data.archived) archivedItems.push(doc);
+      else activeItems.push(doc);
     });
-
     renderActiveItems(activeItems);
     renderArchivedItems(archivedItems);
   });
