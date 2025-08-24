@@ -154,26 +154,27 @@
     position: relative;
   }
 
-  #total {
+ #total {
     font-weight: bold;
     font-size: 16px;
     text-align: center;
     padding: 16px;
-    background: rgba(236, 235, 232, 0.95); /* soft glass color */
+    background: rgba(236, 235, 232, 0.95);
     backdrop-filter: blur(25px) saturate(180%);
     border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 
-    /* Fixed at bottom */
     position: fixed;
     bottom: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: calc(100% - 16px); /* full width with margin */
-    max-width: 400px; /* same as form max width */
+    width: 100%;
+    max-width: 400px; /* same as your cards/form */
     z-index: 999;
 }
+
+
 
 </style>
 
