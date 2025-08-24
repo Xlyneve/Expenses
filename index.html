@@ -98,22 +98,30 @@
     font-size: 16px;
   }
 
-  /* Bottom row: input left, emoji right */
+  /* Bottom row: input left, remaining right */
   .card-bottom {
     display: flex;
-    justify-content: space-between;
+    justify-content: space-between; /* space between input and remaining */
     align-items: center;
     margin-top: 6px;
+    gap: 12px; /* editable space between input and remaining */
   }
 
   .card-bottom input[type="number"] {
-    width: 100px;
+    width: 80px;        /* editable input width */
     padding: 6px 8px;
-    font-size: 16px;
+    font-size: 16px;    /* editable font size */
     border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.5);
     background: rgba(255,255,255,0.3);
     outline: none;
+  }
+
+  .card-bottom .remaining {
+    font-weight: regular;
+    font-size: 14px;    /* editable font size for remaining cost */
+    min-width: 80px;
+    text-align: right;  /* align remaining to the right */
   }
 
   .card-bottom button {
@@ -147,22 +155,22 @@
   }
 
   #total {
-  font-weight: bold;
-  font-size: 16px;
-  text-align: center;
-  padding: 16px;
-  background: rgba(236, 235, 232, 0.9); /* soft glass color with low transparency */
-  backdrop-filter: blur(25px) saturate(180%);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-  position: sticky;
-  bottom: 0;
-  margin: 8px; /* spacing from edges */
-}
-
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    padding: 16px;
+    background: rgba(236, 235, 232, 0.9); /* soft glass color */
+    backdrop-filter: blur(25px) saturate(180%);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    bottom: 0;
+    margin: 8px;
+  }
 
 </style>
+
 </head>
 <body>
 
@@ -187,7 +195,8 @@
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
 const firebaseConfig = {
   apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
@@ -208,13 +217,6 @@ const itemsTableBody = document.querySelector('#itemsTable tbody');
 const paidCardsContainer = document.getElementById('paidCards');
 const totalDiv = document.getElementById('total');
 
-// Helper to format timestamp
-function formatDate(tsOrISO) {
-  if (!tsOrISO) return '';
-  const d = tsOrISO.toDate ? tsOrISO.toDate() : new Date(tsOrISO);
-  return d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
-}
-
 // Add new item
 form.addEventListener('submit', e => {
   e.preventDefault();
@@ -222,7 +224,8 @@ form.addEventListener('submit', e => {
   const cost = parseFloat(itemCostInput.value);
   if (name && !isNaN(cost) && cost >= 0) {
     db.collection('items').add({
-      name, cost,
+      name,
+      cost,
       paid: 0,
       transferred: false,
       archived: false,
@@ -242,6 +245,7 @@ function makeSwipeToDelete(element, docId, name) {
   element.addEventListener('touchstart', e => { startX = e.touches[0].clientX; dragging = true; });
   element.addEventListener('touchmove', e => { if(!dragging) return; currentX = e.touches[0].clientX - startX; if(currentX<0) element.style.transform=`translateX(${currentX}px)`; });
   element.addEventListener('touchend', handleSwipeEnd);
+
   element.addEventListener('mousedown', e => { startX = e.clientX; dragging = true; element.style.transition = ''; });
   element.addEventListener('mousemove', e => { if(!dragging) return; currentX = e.clientX - startX; if(currentX<0) element.style.transform=`translateX(${currentX}px)`; });
   element.addEventListener('mouseup', handleSwipeEnd);
@@ -255,6 +259,13 @@ function makeSwipeToDelete(element, docId, name) {
     currentX=0;
   }
   function resetPosition(){ element.style.transition='transform 0.3s'; element.style.transform='translateX(0)'; setTimeout(()=>{element.style.transition='';},300); }
+}
+
+// Format Firestore timestamp
+function formatDate(ts){
+  if(ts.toDate) ts = ts.toDate(); 
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
 // Render Active Items
@@ -280,41 +291,53 @@ function renderActiveItems(items){
     headerDiv.innerHTML = `<span>${item.name}</span><span>Cost: $${cost.toFixed(2)}</span>`;
     tr.appendChild(headerDiv);
 
-    // Input number below store name
+    // Input + Remaining line
+    const bottomDiv = document.createElement('div');
+    bottomDiv.classList.add('card-bottom');
+
     const inputDiv = document.createElement('input');
     inputDiv.type = 'number';
     inputDiv.min = 0;
     inputDiv.step = 0.01;
     inputDiv.placeholder = '0.00';
     inputDiv.disabled = isFullyPaid;
-    tr.appendChild(inputDiv);
+    bottomDiv.appendChild(inputDiv);
 
-    // Timestamp below input box
-    const tsDiv = document.createElement('small');
-    tsDiv.style.fontSize='12px';
-    tsDiv.style.color='#666';
-    tsDiv.textContent = item.createdAt ? formatDate(item.createdAt) : '';
-    tr.appendChild(tsDiv);
-
-    // Remaining below cost on right (keeps original styling size)
     const remainDiv = document.createElement('div');
-    remainDiv.style.textAlign='right';
+    remainDiv.classList.add('remaining'); // NEW: apply editable CSS class
     remainDiv.textContent = `Remaining: $${remaining.toFixed(2)}`;
-    tr.appendChild(remainDiv);
+    bottomDiv.appendChild(remainDiv);
 
-    // Emoji/transfer button (same size/position as before)
-    const btn = document.createElement('button');
-    btn.textContent = item.transferred?'💰':'👜';
-    btn.title='Mark as transferred';
-    btn.addEventListener('click', ()=>{
+    tr.appendChild(bottomDiv);
+
+    // Timestamp + transfer button line
+    const tsDiv = document.createElement('div');
+    tsDiv.style.display = 'flex';
+    tsDiv.style.justifyContent = 'space-between';
+    tsDiv.style.alignItems = 'center';
+    tsDiv.style.marginTop = '4px';
+    tsDiv.style.fontSize = '12px';
+    tsDiv.style.color = '#666';
+
+    const timestamp = document.createElement('span');
+    timestamp.textContent = item.createdAt ? formatDate(item.createdAt) : '';
+    tsDiv.appendChild(timestamp);
+
+    const transferBtn = document.createElement('button');
+    transferBtn.textContent = item.transferred?'💰':'👜';
+    transferBtn.title='Mark as transferred';
+    transferBtn.style.fontSize = '18px';
+    transferBtn.addEventListener('click', ()=>{
       const newTransferred = !item.transferred;
       db.collection('items').doc(id).update({transferred:newTransferred});
       tr.classList.toggle('transferred', newTransferred);
-      btn.textContent = newTransferred?'💰':'👜';
+      transferBtn.textContent = newTransferred?'💰':'👜';
     });
-    tr.appendChild(btn);
+    tsDiv.appendChild(transferBtn);
 
-    // Payment input listener
+    tr.appendChild(tsDiv);
+
+    // Payment listener
     inputDiv.addEventListener('change', ()=>{
       let payment = parseFloat(inputDiv.value);
       if(isNaN(payment) || payment <= 0){ inputDiv.value=''; return; }
@@ -329,7 +352,6 @@ function renderActiveItems(items){
     });
 
     makeSwipeToDelete(tr, id, item.name);
-
     itemsTableBody.appendChild(tr);
     totalRemaining += remaining;
   });
@@ -337,36 +359,32 @@ function renderActiveItems(items){
   totalDiv.textContent=`Total Remaining: $${totalRemaining.toFixed(2)}`;
 }
 
-// Render Paid Items
+// Render Paid Items (showing partial payments)
 function renderPaidCards(items){
   paidCardsContainer.innerHTML='';
   items.forEach(doc=>{
-    const item = doc.data(); 
-    if(!item.archived) return;
+    const item = doc.data();
+    if(!item.archived && item.paid <= 0) return; // skip active items
 
-    const card = document.createElement('div'); 
+    const card = document.createElement('div');
     card.classList.add('paid-card');
 
-    // Header: store left, latest payment timestamp right
-    let tsToShow = item.createdAt || null;
-    if(Array.isArray(item.lastPayments) && item.lastPayments.length>0){
-      const latest = [...item.lastPayments].sort((a,b)=> new Date(b.date) - new Date(a.date))[0];
-      tsToShow = latest.date || tsToShow;
-    }
-    const header = document.createElement('div');
-    header.style.display='flex';
-    header.style.justifyContent='space-between';
-    header.style.fontWeight='bold';
-    header.innerHTML=`<span>${item.name}</span><span style="font-size:12px;color:#555;">${formatDate(tsToShow)}</span>`;
-    card.appendChild(header);
+    const nameDiv = document.createElement('div');
+    nameDiv.textContent = item.name;
+    nameDiv.style.fontWeight = 'bold';
+    card.appendChild(nameDiv);
 
-    // Show paid + remaining (partial payments)
-    const paidDiv = document.createElement('div'); 
-    const paid = parseFloat(item.paid)||0;
-    const cost = parseFloat(item.cost)||0;
-    const remaining = Math.max(cost - paid,0);
-    paidDiv.textContent = `Paid: $${paid.toFixed(2)} / $${cost.toFixed(2)} • Remaining: $${remaining.toFixed(2)}`;
+    const paidDiv = document.createElement('div');
+    paidDiv.textContent = `Paid: $${(item.paid||0).toFixed(2)} / $${(item.cost||0).toFixed(2)}`;
     card.appendChild(paidDiv);
+
+    if(item.lastPayments && item.lastPayments.length>0){
+      const paymentsDiv = document.createElement('div');
+      paymentsDiv.style.fontSize='12px';
+      paymentsDiv.style.color='#666';
+      paymentsDiv.textContent = 'Last payments: ' + item.lastPayments.map(p=>`$${p.amount.toFixed(2)} (${formatDate(p.date)})`).join(', ');
+      card.appendChild(paymentsDiv);
+    }
 
     paidCardsContainer.appendChild(card);
     makeSwipeToDelete(card, doc.id, item.name);
@@ -375,13 +393,12 @@ function renderPaidCards(items){
 
 // Firestore listener
 db.collection('items').orderBy('createdAt').onSnapshot(snapshot=>{
-  const activeItems = [];
+  const activeItems=[]; 
   snapshot.docs.forEach(doc=>{ const data=doc.data(); if(!data.archived) activeItems.push(doc); });
-  renderActiveItems(activeItems);
+  renderActiveItems(activeItems); 
   renderPaidCards(snapshot.docs);
 });
 </script>
-
 
 </body>
 </html>
