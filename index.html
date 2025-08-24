@@ -208,6 +208,13 @@ const itemsTableBody = document.querySelector('#itemsTable tbody');
 const paidCardsContainer = document.getElementById('paidCards');
 const totalDiv = document.getElementById('total');
 
+// --- helpers ---
+function formatDate(tsOrISO) {
+  if (!tsOrISO) return '';
+  const d = tsOrISO.toDate ? tsOrISO.toDate() : new Date(tsOrISO);
+  return d.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+}
+
 // Add new item
 form.addEventListener('submit', e => {
   e.preventDefault();
@@ -215,8 +222,11 @@ form.addEventListener('submit', e => {
   const cost = parseFloat(itemCostInput.value);
   if (name && !isNaN(cost) && cost >= 0) {
     db.collection('items').add({
-      name, cost, paid: 0, transferred: false,
-      archived: false, lastPayments: [],
+      name, cost,
+      paid: 0,
+      transferred: false,
+      archived: false,              // becomes true only when fully paid
+      lastPayments: [],             // [{amount, date}]
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     itemNameInput.value = '';
@@ -248,75 +258,155 @@ function makeSwipeToDelete(element, docId, name) {
   function resetPosition(){ element.style.transition='transform 0.3s'; element.style.transform='translateX(0)'; setTimeout(()=>{element.style.transition='';},300); }
 }
 
-// Render Active Items
+// Render Active Items (and compute total from ACTIVE ONLY)
 function renderActiveItems(items){
   itemsTableBody.innerHTML='';
-  let totalRemaining=0;
-  items.forEach(doc=>{
-    const item=doc.data(); const id=doc.id; const paid=parseFloat(item.paid)||0;
-    const cost=parseFloat(item.cost)||0; const remaining=Math.max(cost-paid,0);
-    const isFullyPaid=cost-paid<=0.001;
+  let totalRemaining = 0;
 
-    const tr=document.createElement('tr'); tr.classList.add('active-card-row');
+  items.forEach(doc=>{
+    const item = doc.data(); 
+    const id   = doc.id; 
+    const paid = parseFloat(item.paid) || 0;
+    const cost = parseFloat(item.cost) || 0; 
+    const remaining = Math.max(cost - paid, 0);
+    const isFullyPaid = cost - paid <= 0.001;
+
+    const tr = document.createElement('tr'); 
+    tr.classList.add('active-card-row');
     if(item.transferred) tr.classList.add('transferred');
 
-    const headerDiv=document.createElement('div'); headerDiv.classList.add('card-header');
-    headerDiv.innerHTML=`<span>${item.name}</span><span>Cost: $${cost.toFixed(2)}</span>`;
+    // Header row
+    const headerDiv = document.createElement('div'); 
+    headerDiv.classList.add('card-header');
+    headerDiv.innerHTML = `<span>${item.name}</span><span>Cost: $${cost.toFixed(2)}</span>`;
     tr.appendChild(headerDiv);
 
-    const bottomDiv=document.createElement('div'); bottomDiv.classList.add('card-bottom');
-    const payInput=document.createElement('input'); payInput.type='number'; payInput.min=0; payInput.step='0.01'; payInput.placeholder='0.00'; payInput.disabled=isFullyPaid;
+    // Remaining line
+    const remainDiv = document.createElement('div');
+    remainDiv.style.fontSize = '14px';
+    remainDiv.style.color = '#444';
+    remainDiv.textContent = `Remaining: $${remaining.toFixed(2)}`;
+    tr.appendChild(remainDiv);
+
+    // Bottom row: input | timestamp | emoji
+    const bottomDiv = document.createElement('div'); 
+    bottomDiv.classList.add('card-bottom');
+
+    const payInput = document.createElement('input'); 
+    payInput.type = 'number'; 
+    payInput.min = 0; 
+    payInput.step = '0.01'; 
+    payInput.placeholder = '0.00'; 
+    payInput.disabled = isFullyPaid;
     bottomDiv.appendChild(payInput);
 
-    const transferBtn=document.createElement('button');
-    transferBtn.textContent=item.transferred?'💰':'👜';
-    transferBtn.title='Mark as transferred';
-    transferBtn.addEventListener('click',()=>{ const newTransferred=!item.transferred;
-      db.collection('items').doc(id).update({transferred:newTransferred});
-      tr.classList.toggle('transferred',newTransferred);
-      transferBtn.textContent=newTransferred?'💰':'👜';
+    // Minimalist timestamp (createdAt) between input and emoji
+    const ts = document.createElement('small');
+    ts.style.fontSize = '12px';
+    ts.style.color = '#666';
+    ts.textContent = item.createdAt ? formatDate(item.createdAt) : '';
+    bottomDiv.appendChild(ts);
+
+    // Emoji button (transfer toggle)
+    const transferBtn = document.createElement('button');
+    transferBtn.textContent = item.transferred ? '💰' : '👜';
+    transferBtn.title = 'Mark as transferred';
+    transferBtn.addEventListener('click',()=>{ 
+      const newTransferred = !item.transferred;
+      db.collection('items').doc(id).update({ transferred: newTransferred });
+      tr.classList.toggle('transferred', newTransferred);
+      transferBtn.textContent = newTransferred ? '💰' : '👜';
     });
     bottomDiv.appendChild(transferBtn);
 
     tr.appendChild(bottomDiv);
     itemsTableBody.appendChild(tr);
 
-    payInput.addEventListener('change',()=>{
-      let payment=parseFloat(payInput.value);
-      if(isNaN(payment)||payment<=0){payInput.value='';return;}
-      if(payment>remaining+0.001){payInput.value='';return;}
-      const newPaid=paid+payment; const isNowFullyPaid=cost-newPaid<=0.001;
+    // Commit partial payment
+    payInput.addEventListener('change', ()=>{
+      const payment = parseFloat(payInput.value);
+      if (isNaN(payment) || payment <= 0) { payInput.value=''; return; }
+      if (payment > remaining + 0.001) { payInput.value=''; return; }
+
+      const newPaid = paid + payment; 
+      const isNowFullyPaid = cost - newPaid <= 0.001;
+
       db.collection('items').doc(id).update({
-        paid:newPaid, archived:isNowFullyPaid,
-        lastPayments:firebase.firestore.FieldValue.arrayUnion({amount:payment,date:new Date().toISOString()})
-      }).then(()=>{payInput.value='';});
+        paid: newPaid,
+        archived: isNowFullyPaid,
+        lastPayments: firebase.firestore.FieldValue.arrayUnion({
+          amount: payment,
+          date: new Date().toISOString()
+        })
+      }).then(()=>{ payInput.value=''; });
     });
 
-    makeSwipeToDelete(tr,id,item.name);
-    totalRemaining+=remaining;
+    // count towards total (ACTIVE ONLY)
+    totalRemaining += remaining;
+
+    makeSwipeToDelete(tr, id, item.name);
   });
-  totalDiv.textContent=`Total Remaining: $${totalRemaining.toFixed(2)}`;
+
+  // strictly the sum of remaining balances for active items
+  totalDiv.textContent = `Total Remaining: $${totalRemaining.toFixed(2)}`;
 }
 
-// Render Fully Paid Items
+// Render Paid Items (shows partial or full payments, for visibility)
 function renderPaidCards(items){
   paidCardsContainer.innerHTML='';
   items.forEach(doc=>{
-    const item=doc.data(); if(!item.archived) return;
-    const card=document.createElement('div'); card.classList.add('paid-card');
-    const nameDiv=document.createElement('div'); nameDiv.textContent=item.name; nameDiv.style.fontWeight='bold'; card.appendChild(nameDiv);
-    const paidDiv=document.createElement('div'); paidDiv.textContent=`Paid: $${(item.paid||0).toFixed(2)}`; card.appendChild(paidDiv);
+    const item = doc.data(); 
+    const id   = doc.id;
+
+    const cost = parseFloat(item.cost) || 0;
+    const paid = parseFloat(item.paid) || 0;
+    if (paid <= 0) return;  // only show items with some payment made
+
+    const remaining = Math.max(cost - paid, 0);
+
+    const card = document.createElement('div'); 
+    card.classList.add('paid-card');
+
+    // Use latest payment date if available
+    let tsToShow = item.createdAt || null;
+    if (Array.isArray(item.lastPayments) && item.lastPayments.length > 0) {
+      const latest = [...item.lastPayments].sort((a,b)=> new Date(b.date) - new Date(a.date))[0];
+      tsToShow = latest?.date || tsToShow;
+    }
+
+    // Header row (store left, timestamp right)
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.fontWeight = 'bold';
+    header.innerHTML = `
+      <span>${item.name}</span>
+      <span style="font-size:12px;color:#555;">${formatDate(tsToShow)}</span>
+    `;
+    card.appendChild(header);
+
+    // Paid so far + remaining
+    const paidDiv = document.createElement('div'); 
+    paidDiv.textContent = `Paid so far: $${paid.toFixed(2)} / $${cost.toFixed(2)}  •  Remaining: $${remaining.toFixed(2)}`;
+    card.appendChild(paidDiv);
+
     paidCardsContainer.appendChild(card);
-    makeSwipeToDelete(card,doc.id,item.name);
+    makeSwipeToDelete(card, id, item.name);
   });
 }
 
 // Firestore listener
 db.collection('items').orderBy('createdAt').onSnapshot(snapshot=>{
-  const activeItems=[]; snapshot.docs.forEach(doc=>{ const data=doc.data(); if(!data.archived) activeItems.push(doc); });
-  renderActiveItems(activeItems); renderPaidCards(snapshot.docs);
+  const activeItems = []; 
+  snapshot.docs.forEach(doc=>{ 
+    const data = doc.data(); 
+    if (!data.archived) activeItems.push(doc); // active only
+  });
+  renderActiveItems(activeItems);      // computes total strictly from active items
+  renderPaidCards(snapshot.docs);      // shows any item with payments (partial or full)
 });
 </script>
+
 
 </body>
 </html>
