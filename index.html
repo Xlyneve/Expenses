@@ -208,7 +208,7 @@ const itemsTableBody = document.querySelector('#itemsTable tbody');
 const paidCardsContainer = document.getElementById('paidCards');
 const totalDiv = document.getElementById('total');
 
-// --- helpers ---
+// Helper to format timestamp
 function formatDate(tsOrISO) {
   if (!tsOrISO) return '';
   const d = tsOrISO.toDate ? tsOrISO.toDate() : new Date(tsOrISO);
@@ -225,8 +225,8 @@ form.addEventListener('submit', e => {
       name, cost,
       paid: 0,
       transferred: false,
-      archived: false,              // becomes true only when fully paid
-      lastPayments: [],             // [{amount, date}]
+      archived: false,
+      lastPayments: [],
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
     itemNameInput.value = '';
@@ -242,7 +242,6 @@ function makeSwipeToDelete(element, docId, name) {
   element.addEventListener('touchstart', e => { startX = e.touches[0].clientX; dragging = true; });
   element.addEventListener('touchmove', e => { if(!dragging) return; currentX = e.touches[0].clientX - startX; if(currentX<0) element.style.transform=`translateX(${currentX}px)`; });
   element.addEventListener('touchend', handleSwipeEnd);
-
   element.addEventListener('mousedown', e => { startX = e.clientX; dragging = true; element.style.transition = ''; });
   element.addEventListener('mousemove', e => { if(!dragging) return; currentX = e.clientX - startX; if(currentX<0) element.style.transform=`translateX(${currentX}px)`; });
   element.addEventListener('mouseup', handleSwipeEnd);
@@ -258,16 +257,16 @@ function makeSwipeToDelete(element, docId, name) {
   function resetPosition(){ element.style.transition='transform 0.3s'; element.style.transform='translateX(0)'; setTimeout(()=>{element.style.transition='';},300); }
 }
 
-// Render Active Items (and compute total from ACTIVE ONLY)
+// Render Active Items
 function renderActiveItems(items){
   itemsTableBody.innerHTML='';
-  let totalRemaining = 0;
+  let totalRemaining=0;
 
   items.forEach(doc=>{
-    const item = doc.data(); 
-    const id   = doc.id; 
-    const paid = parseFloat(item.paid) || 0;
-    const cost = parseFloat(item.cost) || 0; 
+    const item = doc.data();
+    const id = doc.id;
+    const paid = parseFloat(item.paid)||0;
+    const cost = parseFloat(item.cost)||0;
     const remaining = Math.max(cost - paid, 0);
     const isFullyPaid = cost - paid <= 0.001;
 
@@ -275,135 +274,111 @@ function renderActiveItems(items){
     tr.classList.add('active-card-row');
     if(item.transferred) tr.classList.add('transferred');
 
-    // Header row
+    // Header: store name + cost
     const headerDiv = document.createElement('div'); 
     headerDiv.classList.add('card-header');
     headerDiv.innerHTML = `<span>${item.name}</span><span>Cost: $${cost.toFixed(2)}</span>`;
     tr.appendChild(headerDiv);
 
-    // Remaining line
+    // Input number below store name
+    const inputDiv = document.createElement('input');
+    inputDiv.type = 'number';
+    inputDiv.min = 0;
+    inputDiv.step = 0.01;
+    inputDiv.placeholder = '0.00';
+    inputDiv.disabled = isFullyPaid;
+    tr.appendChild(inputDiv);
+
+    // Timestamp below input box
+    const tsDiv = document.createElement('small');
+    tsDiv.style.fontSize='12px';
+    tsDiv.style.color='#666';
+    tsDiv.textContent = item.createdAt ? formatDate(item.createdAt) : '';
+    tr.appendChild(tsDiv);
+
+    // Remaining below cost on right (keeps original styling size)
     const remainDiv = document.createElement('div');
-    remainDiv.style.fontSize = '14px';
-    remainDiv.style.color = '#444';
+    remainDiv.style.textAlign='right';
     remainDiv.textContent = `Remaining: $${remaining.toFixed(2)}`;
     tr.appendChild(remainDiv);
 
-    // Bottom row: input | timestamp | emoji
-    const bottomDiv = document.createElement('div'); 
-    bottomDiv.classList.add('card-bottom');
-
-    const payInput = document.createElement('input'); 
-    payInput.type = 'number'; 
-    payInput.min = 0; 
-    payInput.step = '0.01'; 
-    payInput.placeholder = '0.00'; 
-    payInput.disabled = isFullyPaid;
-    bottomDiv.appendChild(payInput);
-
-    // Minimalist timestamp (createdAt) between input and emoji
-    const ts = document.createElement('small');
-    ts.style.fontSize = '12px';
-    ts.style.color = '#666';
-    ts.textContent = item.createdAt ? formatDate(item.createdAt) : '';
-    bottomDiv.appendChild(ts);
-
-    // Emoji button (transfer toggle)
-    const transferBtn = document.createElement('button');
-    transferBtn.textContent = item.transferred ? '💰' : '👜';
-    transferBtn.title = 'Mark as transferred';
-    transferBtn.addEventListener('click',()=>{ 
+    // Emoji/transfer button (same size/position as before)
+    const btn = document.createElement('button');
+    btn.textContent = item.transferred?'💰':'👜';
+    btn.title='Mark as transferred';
+    btn.addEventListener('click', ()=>{
       const newTransferred = !item.transferred;
-      db.collection('items').doc(id).update({ transferred: newTransferred });
+      db.collection('items').doc(id).update({transferred:newTransferred});
       tr.classList.toggle('transferred', newTransferred);
-      transferBtn.textContent = newTransferred ? '💰' : '👜';
+      btn.textContent = newTransferred?'💰':'👜';
     });
-    bottomDiv.appendChild(transferBtn);
+    tr.appendChild(btn);
 
-    tr.appendChild(bottomDiv);
-    itemsTableBody.appendChild(tr);
-
-    // Commit partial payment
-    payInput.addEventListener('change', ()=>{
-      const payment = parseFloat(payInput.value);
-      if (isNaN(payment) || payment <= 0) { payInput.value=''; return; }
-      if (payment > remaining + 0.001) { payInput.value=''; return; }
-
-      const newPaid = paid + payment; 
+    // Payment input listener
+    inputDiv.addEventListener('change', ()=>{
+      let payment = parseFloat(inputDiv.value);
+      if(isNaN(payment) || payment <= 0){ inputDiv.value=''; return; }
+      if(payment > remaining + 0.001){ inputDiv.value=''; return; }
+      const newPaid = paid + payment;
       const isNowFullyPaid = cost - newPaid <= 0.001;
-
       db.collection('items').doc(id).update({
         paid: newPaid,
         archived: isNowFullyPaid,
-        lastPayments: firebase.firestore.FieldValue.arrayUnion({
-          amount: payment,
-          date: new Date().toISOString()
-        })
-      }).then(()=>{ payInput.value=''; });
+        lastPayments: firebase.firestore.FieldValue.arrayUnion({amount:payment,date:new Date().toISOString()})
+      }).then(()=>{ inputDiv.value=''; });
     });
 
-    // count towards total (ACTIVE ONLY)
-    totalRemaining += remaining;
-
     makeSwipeToDelete(tr, id, item.name);
+
+    itemsTableBody.appendChild(tr);
+    totalRemaining += remaining;
   });
 
-  // strictly the sum of remaining balances for active items
-  totalDiv.textContent = `Total Remaining: $${totalRemaining.toFixed(2)}`;
+  totalDiv.textContent=`Total Remaining: $${totalRemaining.toFixed(2)}`;
 }
 
-// Render Paid Items (shows partial or full payments, for visibility)
+// Render Paid Items
 function renderPaidCards(items){
   paidCardsContainer.innerHTML='';
   items.forEach(doc=>{
     const item = doc.data(); 
-    const id   = doc.id;
-
-    const cost = parseFloat(item.cost) || 0;
-    const paid = parseFloat(item.paid) || 0;
-    if (paid <= 0) return;  // only show items with some payment made
-
-    const remaining = Math.max(cost - paid, 0);
+    if(!item.archived) return;
 
     const card = document.createElement('div'); 
     card.classList.add('paid-card');
 
-    // Use latest payment date if available
+    // Header: store left, latest payment timestamp right
     let tsToShow = item.createdAt || null;
-    if (Array.isArray(item.lastPayments) && item.lastPayments.length > 0) {
+    if(Array.isArray(item.lastPayments) && item.lastPayments.length>0){
       const latest = [...item.lastPayments].sort((a,b)=> new Date(b.date) - new Date(a.date))[0];
-      tsToShow = latest?.date || tsToShow;
+      tsToShow = latest.date || tsToShow;
     }
-
-    // Header row (store left, timestamp right)
     const header = document.createElement('div');
-    header.style.display = 'flex';
-    header.style.justifyContent = 'space-between';
-    header.style.fontWeight = 'bold';
-    header.innerHTML = `
-      <span>${item.name}</span>
-      <span style="font-size:12px;color:#555;">${formatDate(tsToShow)}</span>
-    `;
+    header.style.display='flex';
+    header.style.justifyContent='space-between';
+    header.style.fontWeight='bold';
+    header.innerHTML=`<span>${item.name}</span><span style="font-size:12px;color:#555;">${formatDate(tsToShow)}</span>`;
     card.appendChild(header);
 
-    // Paid so far + remaining
+    // Show paid + remaining (partial payments)
     const paidDiv = document.createElement('div'); 
-    paidDiv.textContent = `Paid so far: $${paid.toFixed(2)} / $${cost.toFixed(2)}  •  Remaining: $${remaining.toFixed(2)}`;
+    const paid = parseFloat(item.paid)||0;
+    const cost = parseFloat(item.cost)||0;
+    const remaining = Math.max(cost - paid,0);
+    paidDiv.textContent = `Paid: $${paid.toFixed(2)} / $${cost.toFixed(2)} • Remaining: $${remaining.toFixed(2)}`;
     card.appendChild(paidDiv);
 
     paidCardsContainer.appendChild(card);
-    makeSwipeToDelete(card, id, item.name);
+    makeSwipeToDelete(card, doc.id, item.name);
   });
 }
 
 // Firestore listener
 db.collection('items').orderBy('createdAt').onSnapshot(snapshot=>{
-  const activeItems = []; 
-  snapshot.docs.forEach(doc=>{ 
-    const data = doc.data(); 
-    if (!data.archived) activeItems.push(doc); // active only
-  });
-  renderActiveItems(activeItems);      // computes total strictly from active items
-  renderPaidCards(snapshot.docs);      // shows any item with payments (partial or full)
+  const activeItems = [];
+  snapshot.docs.forEach(doc=>{ const data=doc.data(); if(!data.archived) activeItems.push(doc); });
+  renderActiveItems(activeItems);
+  renderPaidCards(snapshot.docs);
 });
 </script>
 
