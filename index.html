@@ -4,89 +4,198 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Credit Card Expenses</title>
+
 <style>
   @font-face { font-family: 'LovelyCoffee'; src: url('LovelyCoffee.ttf') format('truetype'); }
   @font-face { font-family: 'LouisGeorgeCafe'; src: url('LouisGeorgeCafe.ttf') format('truetype'); }
 
- body {
-  font-family: 'LouisGeorgeCafe', sans-serif;
-  background: url('watercolor.png') no-repeat center center fixed;
-  background-size: cover;
-  margin: 0;
-  padding: 20px;
-  color: #333;
-  position: relative;
-}
+  body {
+    font-family: 'LouisGeorgeCafe', sans-serif;
+    background: url('watercolor.png') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+    color: #333;
+  }
 
-/* Glass-like overlay to make background almost white */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(255,255,255,0.85); /* almost white overlay */
-  backdrop-filter: blur(20px);        /* very blurry background image */
-  z-index: -1;
-}
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(20px);
+    z-index: -1;
+  }
 
-  h1 { font-family:'LovelyCoffee',cursive; font-size:80px; text-align:center; margin:10px 0; }
-  h2, #total { font-family:Tahoma,sans-serif; text-align:center; }
-  form { max-width:400px; margin:0 auto 20px auto; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
-  input[type="text"], input[type="number"] { padding:8px; font-size:16px; border-radius:5px; border:1px solid #ccc; flex:1 1 150px; }
-  button, .delete-btn { padding:6px 10px; font-size:12px; border-radius:5px; border:none; cursor:pointer; background:#ebebeb; }
-  button:hover, .delete-btn:hover { background:#e9f7f0; }
-  .delete-btn:hover { background:#cc0000; color:white; }
+  h1 {
+    font-family: 'LovelyCoffee', cursive;
+    font-size: 34px;
+    text-align: center;
+    margin: 18px 0;
+  }
 
-  table { width:100%; max-width:900px; margin:0 auto; border-collapse:collapse; }
-  th, td { padding:10px; border-bottom:1px solid #ddd; text-align:center; }
-  td.name-cell { text-align:left; }
-  td .date-added { font-size:0.75em; color:#666; margin-top:3px; }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    margin: 0 auto;
+    max-width: 400px;
+  }
 
-  .card-container { display:flex; flex-wrap:wrap; gap:15px; justify-content:center; margin:15px 0; }
-  .paid-card { flex:1 1 calc(25% - 15px); min-width:220px; background:#e9f7ef; border:1px solid #c3e6cb; border-radius:10px; padding:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+  input[type="text"], input[type="number"] {
+    padding: 14px;
+    font-size: 12px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    background: #fff;
+  }
 
-  #total { font-weight:bold; margin:20px auto; font-size:14px; }
+  button {
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: #cbc4d6;
+    color: black;
+    font-weight: 600;
+    transition: opacity 0.2s;
+  }
+  button:hover { opacity: 0.85; }
 
-  @media(max-width:600px){
-    table, thead, tbody, th, td, tr { display:block; width:100%; }
-    thead { display:none; }
-    tr { margin-bottom:15px; border:1px solid #ccc; border-radius:10px; padding:10px; background:#fff; }
-    td { text-align:left; padding:8px 10px; font-size:12px; border:none; border-bottom:1px solid #eee; }
-    td::before { content: attr(data-label); font-weight:bold; display:block; margin-bottom:5px; color:#555; }
-    input[type="number"] { width:100%; }
-    #total { text-align:center; }
+  /* Active Cards - Glassmorphism */
+  #itemsTable {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  #itemsTable tr.active-card-row {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    font-size: 12px;
+    transition: background 0.3s;
+  }
+
+  #itemsTable tr.active-card-row.transferred {
+    background: rgba(200, 255, 200, 0.25);
+  }
+
+  /* Top row: Store + Cost */
+  .active-card-row .card-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    font-size: 12px;
+  }
+
+  /* Bottom row: small paid input + emoji */
+  .active-card-row .card-bottom {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  .active-card-row .card-bottom input[type="number"] {
+    width: 60px;
+    padding: 4px 6px;
+    font-size: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.3);
+    outline: none;
+  }
+
+  .active-card-row .card-bottom button {
+    font-size: 16px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 4px;
+    transition: transform 0.2s;
+  }
+  .active-card-row .card-bottom button:hover {
+    transform: scale(1.2);
+  }
+
+  /* Hover delete button */
+  .delete-hover, .delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #eccbc9;
+    color: white;
+    font-size: 10px;
+    border-radius: 8px;
+    padding: 2px 6px;
+    cursor: pointer;
+    z-index: 2;
+  }
+  .show-delete .delete-hover, .show-delete .delete-btn { display: block; }
+
+  /* Fully Paid Cards */
+  .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 8px;
+    justify-content: center;
   }
   .paid-card {
-  flex: 1 1 180px;          /* smaller width */
-  min-width: 150px;
-  max-width: 220px;
-  background: rgba(255, 255, 255, 0.2); /* glassy */
-  backdrop-filter: blur(6px);           /* slight glass blur */
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 10px;
-  padding: 10px;
-  margin: 5px;
-  font-size: 12px;         /* smaller font */
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  word-wrap: break-word;   /* wrap long text */
-  overflow-wrap: break-word;
-}
+    flex: 1 1 160px;
+    min-width: 150px;
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(10px);
+    border-radius: 14px;
+    padding: 12px;
+    font-size: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+    position: relative;
+  }
 
-.transferred-row { 
-  background: rgba(171, 171, 171, 0.5); /* translucent glass effect */
-  backdrop-filter: blur(8px);           /* subtle glass blur */
-  border: 1px solid rgba(255, 255, 255, 0.5); /* subtle border */
-}
+  #total {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    padding: 16px;
+    background: rgba(255,255,255,0.9);
+    position: sticky;
+    bottom: 0;
+    border-top: 1px solid #ddd;
+  }
 
-
-
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0; right: 0;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+    background: #f5e2e3;
+    border-top: 1px solid #ddd;
+    backdrop-filter: blur(20px);
+  }
+  .bottom-nav button {
+    background: none;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+  }
 </style>
 </head>
 <body>
 
-<h1>Credit Card Expenses</h1>
+<h1>💳 Credit Card Expenses</h1>
 
 <form id="itemForm">
   <input type="text" id="itemName" placeholder="Item Name" required>
@@ -95,30 +204,18 @@ body::before {
 </form>
 
 <h2>Active Items</h2>
-<table id="itemsTable">
-  <thead>
-    <tr>
-      <th>Item</th>
-      <th>Cost ($)</th>
-      <th>Paid ($)</th>
-      <th>Remaining ($)</th>
-      <th>Pay Amount</th>
-      <th>Transferred</th>
-      <th>Fully Paid</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<table id="itemsTable"><tbody></tbody></table>
 
 <h2>Fully Paid Items</h2>
 <div id="paidCards" class="card-container"></div>
 
-<div style="text-align:center; margin:20px;">
-  <button id="deleteLastMonthBtn">Delete Last Month</button>
-</div>
-
 <div id="total">Total Remaining: $0.00</div>
+
+<!-- Bottom nav -->
+<div class="bottom-nav">
+  <button onclick="window.scrollTo(0,0)">⬆ Top</button>
+  <button id="deleteLastMonthBtn">🗑 Delete Month</button>
+</div>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -141,10 +238,10 @@ const form = document.getElementById('itemForm');
 const itemNameInput = document.getElementById('itemName');
 const itemCostInput = document.getElementById('itemCost');
 const itemsTableBody = document.querySelector('#itemsTable tbody');
-const archivedTableBody = document.querySelector('#archivedTable tbody');
 const paidCardsContainer = document.getElementById('paidCards');
 const totalDiv = document.getElementById('total');
 
+// Add new item
 form.addEventListener('submit', e => {
   e.preventDefault();
   const name = itemNameInput.value.trim();
@@ -164,6 +261,62 @@ form.addEventListener('submit', e => {
   }
 });
 
+// Swipe-to-delete setup for touch + mouse
+function makeSwipeToDelete(element, docId, name) {
+  let startX = 0;
+  let currentX = 0;
+  let dragging = false;
+  const threshold = 100; // pixels to trigger delete
+
+  // Touch events
+  element.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    dragging = true;
+  });
+  element.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    currentX = e.touches[0].clientX - startX;
+    if (currentX < 0) element.style.transform = `translateX(${currentX}px)`;
+  });
+  element.addEventListener('touchend', () => handleSwipeEnd());
+
+  // Mouse events
+  element.addEventListener('mousedown', e => {
+    startX = e.clientX;
+    dragging = true;
+    element.style.transition = '';
+  });
+  element.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    currentX = e.clientX - startX;
+    if (currentX < 0) element.style.transform = `translateX(${currentX}px)`;
+  });
+  element.addEventListener('mouseup', () => handleSwipeEnd());
+  element.addEventListener('mouseleave', () => handleSwipeEnd());
+
+  function handleSwipeEnd() {
+    if (!dragging) return;
+    dragging = false;
+    if (currentX < -threshold) {
+      if (confirm(`Delete "${name}"?`)) {
+        db.collection('items').doc(docId).delete();
+      } else {
+        resetPosition();
+      }
+    } else {
+      resetPosition();
+    }
+    currentX = 0;
+  }
+
+  function resetPosition() {
+    element.style.transition = 'transform 0.3s';
+    element.style.transform = 'translateX(0)';
+    setTimeout(() => { element.style.transition = ''; }, 300);
+  }
+}
+
+// Render Active Items
 function renderActiveItems(items) {
   itemsTableBody.innerHTML = '';
   let totalRemaining = 0;
@@ -177,163 +330,77 @@ function renderActiveItems(items) {
     const isFullyPaid = cost - paid <= 0.001;
 
     const tr = document.createElement('tr');
+    tr.classList.add('active-card-row');
+    if (item.transferred) tr.classList.add('transferred');
 
-    // glass effect for transferred
-    if (item.transferred && !isFullyPaid) {
-  tr.classList.add('transferred-row');
-}
+    // Header
+    const headerDiv = document.createElement('div');
+    headerDiv.classList.add('card-header');
+    headerDiv.innerHTML = `<span>${item.name}</span><span>Cost: $${cost.toFixed(2)}</span>`;
+    tr.appendChild(headerDiv);
 
+    // Bottom row
+    const bottomDiv = document.createElement('div');
+    bottomDiv.classList.add('card-bottom');
 
-    const tdName = document.createElement('td');
-    tdName.classList.add('name-cell');
-    tdName.setAttribute('data-label', 'Item');
-    const nameDiv = document.createElement('div');
-    nameDiv.textContent = item.name;
-    nameDiv.style.fontWeight = 'bold';
-    const dateDiv = document.createElement('div');
-    dateDiv.classList.add('date-added');
-    if (item.createdAt?.toDate) {
-      dateDiv.textContent = item.createdAt.toDate().toLocaleString(undefined, {
-        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-    }
-    tdName.appendChild(nameDiv);
-    tdName.appendChild(dateDiv);
-    tr.appendChild(tdName);
-
-    const tdCost = document.createElement('td');
-    tdCost.textContent = cost.toFixed(2);
-    tdCost.setAttribute('data-label', 'Cost');
-    tr.appendChild(tdCost);
-
-    const tdPaid = document.createElement('td');
-    tdPaid.textContent = paid.toFixed(2);
-    tdPaid.setAttribute('data-label', 'Paid');
-    tr.appendChild(tdPaid);
-
-    const tdRemaining = document.createElement('td');
-    tdRemaining.innerHTML = `<b>$${remaining.toFixed(2)}</b>`;
-    tdRemaining.setAttribute('data-label', 'Remaining');
-    tr.appendChild(tdRemaining);
-
-    const tdPayInput = document.createElement('td');
-    tdPayInput.setAttribute('data-label', 'Pay');
     const payInput = document.createElement('input');
     payInput.type = 'number';
     payInput.min = 0;
     payInput.step = '0.01';
     payInput.placeholder = '0.00';
-    payInput.style.width = '80px';
     payInput.disabled = isFullyPaid;
-    tdPayInput.appendChild(payInput);
-    tr.appendChild(tdPayInput);
+    bottomDiv.appendChild(payInput);
 
-    const tdTransferred = document.createElement('td');
-    tdTransferred.setAttribute('data-label', 'Transferred');
     const transferBtn = document.createElement('button');
-    transferBtn.textContent = item.transferred ? "Undo Transfer" : "Mark Transferred";
+    transferBtn.textContent = item.transferred ? '💰' : '👜';
+    transferBtn.title = 'Mark as transferred';
     transferBtn.addEventListener('click', () => {
-      db.collection('items').doc(id).update({ transferred: !item.transferred });
+      const newTransferred = !item.transferred;
+      db.collection('items').doc(id).update({ transferred: newTransferred });
+      tr.classList.toggle('transferred', newTransferred);
+      transferBtn.textContent = newTransferred ? '💰' : '👜';
     });
-    tdTransferred.appendChild(transferBtn);
-    tr.appendChild(tdTransferred);
+    bottomDiv.appendChild(transferBtn);
 
-    const tdCheckbox = document.createElement('td');
-    tdCheckbox.setAttribute('data-label', 'Fully Paid');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = isFullyPaid;
-    checkbox.disabled = !isFullyPaid;
-    checkbox.addEventListener('change', () => {
-      if (checkbox.checked && isFullyPaid) {
-        db.collection('items').doc(id).update({ archived: true });
-      }
-    });
-    tdCheckbox.appendChild(checkbox);
-    tr.appendChild(tdCheckbox);
+    tr.appendChild(bottomDiv);
+    itemsTableBody.appendChild(tr);
 
-    const tdActions = document.createElement('td');
-    tdActions.setAttribute('data-label', 'Actions');
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.classList.add('delete-btn');
-    deleteBtn.addEventListener('click', () => {
-      if (confirm(`Delete "${item.name}"?`)) {
-        db.collection('items').doc(id).delete();
-      }
-    });
-    tdActions.appendChild(deleteBtn);
-
-    if (item.lastPayments?.length > 0) {
-      const undoBtn = document.createElement('button');
-      undoBtn.textContent = 'Undo';
-      undoBtn.classList.add('delete-btn');
-      undoBtn.addEventListener('click', () => {
-        const last = item.lastPayments[item.lastPayments.length - 1];
-        const updatedPaid = paid - last.amount;
-        const updatedLog = item.lastPayments.slice(0, -1);
-        db.collection('items').doc(id).update({
-          paid: updatedPaid,
-          archived: false,
-          lastPayments: updatedLog
-        }).then(() => alert(`Undid $${last.amount.toFixed(2)} payment`));
-      });
-      tdActions.appendChild(undoBtn);
-    }
-
-    tr.appendChild(tdActions);
-
+    // Payment input
     payInput.addEventListener('change', () => {
       let payment = parseFloat(payInput.value);
-      if (isNaN(payment) || payment <= 0) {
-        alert('Enter a valid positive payment amount');
-        payInput.value = '';
-        return;
-      }
-      if (payment > remaining + 0.001) {
-        alert(`Cannot pay more than remaining: $${remaining.toFixed(2)}`);
-        payInput.value = '';
-        return;
-      }
+      if (isNaN(payment) || payment <= 0) { payInput.value = ''; return; }
+      if (payment > remaining + 0.001) { payInput.value = ''; return; }
 
       const newPaid = paid + payment;
       const isNowFullyPaid = cost - newPaid <= 0.001;
 
-      const updateData = {
+      db.collection('items').doc(id).update({
         paid: newPaid,
         archived: isNowFullyPaid,
         lastPayments: firebase.firestore.FieldValue.arrayUnion({
           amount: payment,
           date: new Date().toISOString()
         })
-      };
-
-      db.collection('items').doc(id).update(updateData)
-        .then(() => { payInput.value = ''; })
-        .catch(error => alert('Error updating payment: ' + error.message));
+      }).then(() => { payInput.value = ''; });
     });
 
+    makeSwipeToDelete(tr, id, item.name);
+
     totalRemaining += remaining;
-    itemsTableBody.appendChild(tr);
   });
 
   totalDiv.textContent = `Total Remaining: $${totalRemaining.toFixed(2)}`;
 }
 
+// Render Fully Paid Items
 function renderPaidCards(items) {
   paidCardsContainer.innerHTML = '';
   items.forEach(doc => {
     const item = doc.data();
-    if (!item.archived) return; // only show fully paid
+    if (!item.archived) return;
 
     const card = document.createElement('div');
     card.classList.add('paid-card');
-    card.style.fontSize = '12px';
-    card.style.width = '180px';   // smaller width
-    card.style.padding = '10px';  // smaller padding
-    card.style.background = "rgba(255,255,255,0.15)";
-    card.style.backdropFilter = "blur(8px)"; // slightly stronger blur
-    card.style.marginBottom = '10px';
 
     const nameDiv = document.createElement('div');
     nameDiv.textContent = item.name;
@@ -344,84 +411,24 @@ function renderPaidCards(items) {
     paidDiv.textContent = `Paid: $${(item.paid || 0).toFixed(2)}`;
     card.appendChild(paidDiv);
 
-    if (item.transferred) {
-      const transDiv = document.createElement('div');
-      transDiv.textContent = 'Transferred';
-      transDiv.style.fontSize = '10px';
-      transDiv.style.opacity = '0.7';
-      card.appendChild(transDiv);
-    }
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.classList.add('delete-btn');
-    deleteBtn.style.marginTop = '5px';
-    deleteBtn.addEventListener('click', () => {
-      if (confirm(`Delete "${item.name}"?`)) {
-        db.collection('items').doc(doc.id).delete();
-      }
-    });
-    card.appendChild(deleteBtn);
-
     paidCardsContainer.appendChild(card);
+
+    makeSwipeToDelete(card, doc.id, item.name);
   });
 }
 
-
-function renderArchivedItems(items) {
-  archivedTableBody.innerHTML = '';
-  items.forEach(doc => {
-    const item = doc.data();
-    const id = doc.id;
-
-    const tr = document.createElement('tr');
-    tr.style.backgroundColor = "#e6f9e6";
-
-    const tdName = document.createElement('td');
-    tdName.textContent = item.name;
-    tdName.style.fontWeight = 'bold';
-    tr.appendChild(tdName);
-
-    const tdCost = document.createElement('td');
-    tdCost.textContent = (item.cost || 0).toFixed(2);
-    tr.appendChild(tdCost);
-
-    const tdPaid = document.createElement('td');
-    tdPaid.textContent = (item.paid || 0).toFixed(2);
-    tr.appendChild(tdPaid);
-
-    const tdDate = document.createElement('td');
-    tdDate.textContent = item.createdAt?.toDate().toLocaleString() || '...';
-    tr.appendChild(tdDate);
-
-    const tdDelete = document.createElement('td');
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.classList.add('delete-btn');
-    deleteBtn.addEventListener('click', () => {
-      if (confirm(`Delete "${item.name}"?`)) {
-        db.collection('items').doc(id).delete();
-      }
-    });
-    tdDelete.appendChild(deleteBtn);
-    tr.appendChild(tdDelete);
-
-    archivedTableBody.appendChild(tr);
-  });
-}
-
+// Firestore listener
 db.collection('items').orderBy('createdAt').onSnapshot(snapshot => {
   const activeItems = [];
-  const archivedItems = [];
   snapshot.docs.forEach(doc => {
     const data = doc.data();
-    if (data.archived) archivedItems.push(doc);
-    else activeItems.push(doc);
+    if (!data.archived) activeItems.push(doc);
   });
+
   renderActiveItems(activeItems);
-  renderPaidCards(snapshot.docs); // only cards filtered inside function
-  renderArchivedItems(archivedItems);
+  renderPaidCards(snapshot.docs);
 });
 </script>
+
 </body>
 </html>
