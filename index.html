@@ -29,7 +29,7 @@
 
   h1 {
     font-family: 'LovelyCoffee', cursive;
-    font-size: 34px;
+    font-size: 40px;
     text-align: center;
     margin: 18px 0;
   }
@@ -45,7 +45,7 @@
 
   input[type="text"], input[type="number"] {
     padding: 14px;
-    font-size: 12px;
+    font-size: 16px;
     border-radius: 12px;
     border: 1px solid #ccc;
     background: #fff;
@@ -65,29 +65,35 @@
   button:hover { opacity: 0.85; }
 
   /* Active Cards - Glassmorphism */
-  #itemsTable {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-  }
+ #itemsTable {
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* more space between cards */
+  padding: 8px;
+}
 
-  #itemsTable tr.active-card-row {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px;
-    background: rgba(255,255,255,0.15);
-    backdrop-filter: blur(10px);
-    border-radius: 16px;
-    font-size: 12px;
-    transition: background 0.3s;
-  }
+#itemsTable tr.active-card-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 16px;
+  font-size: 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, opacity 0.3s ease, background 0.3s ease;
+  cursor: grab;
+  margin-bottom: 8px; /* extra spacing between rows */
+}
 
-  #itemsTable tr.active-card-row.transferred {
-    background: rgba(200, 255, 200, 0.25);
-  }
+#itemsTable tr.active-card-row.transferred {
+  background: rgba(208, 160, 163, 0.3); /* soft glassy pink */
+}
+
+
 
   /* Top row: Store + Cost */
   .active-card-row .card-header {
