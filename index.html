@@ -173,6 +173,63 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 
+.paid-today-badge {
+  display: inline-block;
+  width: fit-content;
+  margin-left: 6px;
+
+  padding: 3px 8px;
+  border-radius: 999px;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  background: rgba(255, 255, 190, 0.72);
+  border: 1px solid rgba(255,255,255,0.65);
+
+  box-shadow:
+    0 0 10px rgba(255, 245, 160, 0.75),
+    inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+.undo-payment-btn {
+  width: 100%;
+  margin-top: 9px;
+  padding: 7px 9px;
+
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+
+  background: rgba(255,255,255,0.34);
+  border: 1px solid rgba(255,255,255,0.55);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.show-old-toggle {
+  padding: 7px 10px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  background: rgba(255,255,255,0.32);
+  border: 1px solid rgba(255,255,255,0.45);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+
+.paid-progress {
+  font-size: 13px;
+  opacity: 0.75;
+  margin-top: -2px;
+}
+
   .paid-card {
   flex: 1 1 180px;
   min-width: 170px;
@@ -359,9 +416,16 @@
 
 <div class="paid-heading-row">
   <h2>Fully Paid Items</h2>
-  <button id="cleanupOldBtn" type="button" class="cleanup-btn">
-    Clean 1yr+
-  </button>
+
+  <div style="display:flex; gap:8px;">
+    <button id="toggleOldPaidBtn" type="button" class="show-old-toggle">
+      Show all
+    </button>
+
+    <button id="cleanupOldBtn" type="button" class="cleanup-btn">
+      Clean 1yr+
+    </button>
+  </div>
 </div>
 
 <div id="paidCards" class="card-container"></div>
@@ -392,7 +456,10 @@ const itemCostInput = document.getElementById('itemCost');
 const itemsTableBody = document.querySelector('#itemsTable tbody');
 const paidCardsContainer = document.getElementById('paidCards');
 const cleanupOldBtn = document.getElementById('cleanupOldBtn');
+const toggleOldPaidBtn = document.getElementById('toggleOldPaidBtn');
 const totalDiv = document.getElementById('total');
+
+let showAllPaidItems = false;
 
 // Add new item
 form.addEventListener('submit', e => {
@@ -456,6 +523,19 @@ function escapeHtml(str) {
     .replaceAll("'", '&#039;');
 }
 
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+}
+
+function isOlderThanDays(dateValue, days) {
+  const d = new Date(dateValue);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return d < cutoff;
+}
+
 // Render Active Items
 function renderActiveItems(items){
   itemsTableBody.innerHTML='';
@@ -494,9 +574,14 @@ function renderActiveItems(items){
     const remainDiv = document.createElement('div');
     remainDiv.classList.add('remaining'); // NEW: apply editable CSS class
     remainDiv.textContent = `Remaining: $${remaining.toFixed(2)}`;
-    bottomDiv.appendChild(remainDiv);
+bottomDiv.appendChild(remainDiv);
 
-    tr.appendChild(bottomDiv);
+tr.appendChild(bottomDiv);
+
+const paidProgressDiv = document.createElement('div');
+paidProgressDiv.classList.add('paid-progress');
+paidProgressDiv.textContent = `Paid so far: $${paid.toFixed(2)} / $${cost.toFixed(2)}`;
+tr.appendChild(paidProgressDiv);
 
     // Timestamp + transfer button line
     const tsDiv = document.createElement('div');
@@ -581,12 +666,17 @@ function renderPaidCards(items){
       const paid = Number(item.paid) || 0;
       return item.archived || paid > 0;
     })
+    .filter(({ latestDate }) => {
+      if (showAllPaidItems) return true;
+      if (!latestDate || latestDate.getTime() === 0) return true;
+      return !isOlderThanDays(latestDate, 30);
+    })
     .sort((a, b) => b.latestDate - a.latestDate);
 
   if (paidItems.length === 0) {
     paidCardsContainer.innerHTML = `
       <div style="font-size:13px; opacity:0.65; padding:10px;">
-        No paid items yet
+        No recent paid items. Tap “Show all” to view older ones.
       </div>
     `;
     return;
@@ -604,13 +694,19 @@ function renderPaidCards(items){
     const card = document.createElement('div');
     card.classList.add('paid-card');
 
+    const latestDateObj = latestDate ? new Date(latestDate) : null;
+    const paidToday = latestDateObj ? isSameDay(latestDateObj, new Date()) : false;
+
     if (latestDate) {
       const daysAgo = (Date.now() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24);
       if (daysAgo <= 7) card.classList.add('recent-paid');
     }
 
     card.innerHTML = `
-      <div class="paid-card-name">${escapeHtml(item.name || 'Untitled')}</div>
+      <div class="paid-card-name">
+        ${escapeHtml(item.name || 'Untitled')}
+        ${paidToday ? '<span class="paid-today-badge">Paid today</span>' : ''}
+      </div>
 
       <div class="paid-card-status">
         ${isFullyPaid ? 'Fully paid' : 'Part paid'}
@@ -653,10 +749,59 @@ function renderPaidCards(items){
             </div>`
           : ''
       }
+
+      ${
+        latestPayment
+          ? `<button class="undo-payment-btn" type="button" data-doc-id="${doc.id}">
+              Undo latest payment
+            </button>`
+          : ''
+      }
     `;
 
     paidCardsContainer.appendChild(card);
     makeSwipeToDelete(card, doc.id, item.name || 'Untitled');
+  });
+}
+
+async function undoLatestPayment(docId) {
+  const ref = db.collection('items').doc(docId);
+  const snap = await ref.get();
+
+  if (!snap.exists) return;
+
+  const item = snap.data();
+  const payments = Array.isArray(item.lastPayments) ? item.lastPayments : [];
+
+  if (!payments.length) {
+    alert('No payment to undo.');
+    return;
+  }
+
+  const sortedPayments = payments
+    .slice()
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const latestPayment = sortedPayments[0];
+  const latestAmount = Number(latestPayment.amount) || 0;
+
+  const ok = confirm(
+    `Undo latest payment of $${latestAmount.toFixed(2)} for "${item.name || 'Untitled'}"?`
+  );
+
+  if (!ok) return;
+
+  const newPayments = payments.filter(p => {
+    return !(Number(p.amount) === Number(latestPayment.amount) && p.date === latestPayment.date);
+  });
+
+  const currentPaid = Number(item.paid) || 0;
+  const newPaid = Math.max(currentPaid - latestAmount, 0);
+
+  await ref.update({
+    paid: newPaid,
+    archived: false,
+    lastPayments: newPayments
   });
 }
 
@@ -721,6 +866,23 @@ async function deleteOldPaidItems() {
 
   alert(`Deleted ${oldPaidDocs.length} old paid item(s).`);
 }
+
+paidCardsContainer.addEventListener('click', (e) => {
+  const btn = e.target.closest('.undo-payment-btn');
+  if (!btn) return;
+
+  e.stopPropagation();
+  undoLatestPayment(btn.dataset.docId);
+});
+
+toggleOldPaidBtn?.addEventListener('click', () => {
+  showAllPaidItems = !showAllPaidItems;
+  toggleOldPaidBtn.textContent = showAllPaidItems ? 'Show recent' : 'Show all';
+
+  db.collection('items').orderBy('createdAt').get().then(snapshot => {
+    renderPaidCards(snapshot.docs);
+  });
+});
 
 cleanupOldBtn?.addEventListener('click', deleteOldPaidItems);
 
