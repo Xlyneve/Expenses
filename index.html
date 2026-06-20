@@ -90,6 +90,7 @@
   #itemsTable tr.active-card-row.transferred {
     background: rgba(208,160,163,0.3);
   }
+  
 
   .card-header {
     display: flex;
@@ -141,18 +142,118 @@
     padding: 8px;
     justify-content: center;
   }
+  
+  .paid-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  padding: 0 10px;
+  margin-top: 12px;
+}
+
+.paid-heading-row h2 {
+  margin: 0;
+}
+
+.cleanup-btn {
+  padding: 7px 10px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  background: rgba(255,255,255,0.32);
+  border: 1px solid rgba(255,255,255,0.45);
+
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
 
   .paid-card {
-    flex: 1 1 160px;
-    min-width: 150px;
-    background: rgba(255,255,255,0.25);
-    backdrop-filter: blur(10px);
-    border-radius: 14px;
-    padding: 12px;
-    font-size: 16px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.08);
-    position: relative;
-  }
+  flex: 1 1 180px;
+  min-width: 170px;
+
+  background: rgba(255,255,255,0.30);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+
+  border-radius: 16px;
+  padding: 12px;
+
+  font-size: 14px;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.35);
+
+  position: relative;
+}
+
+.paid-card.recent-paid {
+  background: rgba(209, 230, 214, 0.42);
+  box-shadow:
+    0 3px 12px rgba(0,0,0,0.08),
+    0 0 14px rgba(180, 230, 190, 0.45);
+}
+
+.paid-card-name {
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 6px;
+  overflow-wrap: anywhere;
+}
+
+.paid-card-status {
+  display: inline-block;
+  width: fit-content;
+
+  padding: 3px 8px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  background: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.45);
+
+  margin-bottom: 8px;
+}
+
+.paid-card-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.paid-card-label {
+  opacity: 0.65;
+}
+
+.paid-card-value {
+  font-weight: 700;
+  text-align: right;
+}
+
+.paid-card-date {
+  margin-top: 7px;
+  font-size: 12px;
+  color: #666;
+}
+
+.paid-card-payments {
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(255,255,255,0.35);
+
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
 
  #total {
     font-weight: bold;
@@ -193,10 +294,17 @@
   <button type="submit">Add Item</button>
 </form>
 
+
 <h2>Active Items</h2>
 <table id="itemsTable"><tbody></tbody></table>
 
-<h2>Fully Paid Items</h2>
+<div class="paid-heading-row">
+  <h2>Fully Paid Items</h2>
+  <button id="cleanupOldBtn" type="button" class="cleanup-btn">
+    Clean 1yr+
+  </button>
+</div>
+
 <div id="paidCards" class="card-container"></div>
 
 <div id="total">Total Remaining: $0.00</div>
@@ -204,8 +312,6 @@
 <div class="bottom-nav">
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
@@ -226,6 +332,7 @@ const itemNameInput = document.getElementById('itemName');
 const itemCostInput = document.getElementById('itemCost');
 const itemsTableBody = document.querySelector('#itemsTable tbody');
 const paidCardsContainer = document.getElementById('paidCards');
+const cleanupOldBtn = document.getElementById('cleanupOldBtn');
 const totalDiv = document.getElementById('total');
 
 // Add new item
@@ -277,6 +384,17 @@ function formatDate(ts){
   if(ts.toDate) ts = ts.toDate(); 
   const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 // Render Active Items
@@ -372,42 +490,182 @@ function renderActiveItems(items){
 
 // Render Paid Items (showing partial payments)
 function renderPaidCards(items){
-  paidCardsContainer.innerHTML='';
-  items.forEach(doc=>{
-    const item = doc.data();
-    if(!item.archived && item.paid <= 0) return; // skip active items
+  paidCardsContainer.innerHTML = '';
+
+  const paidItems = items
+    .map(doc => {
+      const item = doc.data();
+      const payments = Array.isArray(item.lastPayments) ? item.lastPayments : [];
+
+      const latestPayment = payments.length
+        ? payments.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+        : null;
+
+      return {
+        doc,
+        item,
+        latestPayment,
+        latestDate: latestPayment ? new Date(latestPayment.date) : new Date(0)
+      };
+    })
+    .filter(({ item }) => {
+      const paid = Number(item.paid) || 0;
+      return item.archived || paid > 0;
+    })
+    .sort((a, b) => b.latestDate - a.latestDate);
+
+  if (paidItems.length === 0) {
+    paidCardsContainer.innerHTML = `
+      <div style="font-size:13px; opacity:0.65; padding:10px;">
+        No paid items yet
+      </div>
+    `;
+    return;
+  }
+
+  paidItems.forEach(({ doc, item, latestPayment }) => {
+    const paid = Number(item.paid) || 0;
+    const cost = Number(item.cost) || 0;
+    const remaining = Math.max(cost - paid, 0);
+    const isFullyPaid = remaining <= 0.001;
+
+    const latestAmount = latestPayment ? Number(latestPayment.amount) || 0 : 0;
+    const latestDate = latestPayment ? latestPayment.date : null;
 
     const card = document.createElement('div');
     card.classList.add('paid-card');
 
-    const nameDiv = document.createElement('div');
-    nameDiv.textContent = item.name;
-    nameDiv.style.fontWeight = 'bold';
-    card.appendChild(nameDiv);
-
-    const paidDiv = document.createElement('div');
-    paidDiv.textContent = `Paid: $${(item.paid||0).toFixed(2)} / $${(item.cost||0).toFixed(2)}`;
-    card.appendChild(paidDiv);
-
-    if(item.lastPayments && item.lastPayments.length>0){
-      const paymentsDiv = document.createElement('div');
-      paymentsDiv.style.fontSize='12px';
-      paymentsDiv.style.color='#666';
-      paymentsDiv.textContent = 'Last payments: ' + item.lastPayments.map(p=>`$${p.amount.toFixed(2)} (${formatDate(p.date)})`).join(', ');
-      card.appendChild(paymentsDiv);
+    if (latestDate) {
+      const daysAgo = (Date.now() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysAgo <= 7) card.classList.add('recent-paid');
     }
 
+    card.innerHTML = `
+      <div class="paid-card-name">${escapeHtml(item.name || 'Untitled')}</div>
+
+      <div class="paid-card-status">
+        ${isFullyPaid ? 'Fully paid' : 'Part paid'}
+      </div>
+
+      <div class="paid-card-row">
+        <span class="paid-card-label">Latest payment</span>
+        <span class="paid-card-value">$${latestAmount.toFixed(2)}</span>
+      </div>
+
+      <div class="paid-card-row">
+        <span class="paid-card-label">Total paid</span>
+        <span class="paid-card-value">$${paid.toFixed(2)} / $${cost.toFixed(2)}</span>
+      </div>
+
+      ${
+        !isFullyPaid
+          ? `<div class="paid-card-row">
+              <span class="paid-card-label">Still owing</span>
+              <span class="paid-card-value">$${remaining.toFixed(2)}</span>
+            </div>`
+          : ''
+      }
+
+      <div class="paid-card-date">
+        ${latestDate ? `Paid on ${formatDate(latestDate)}` : 'No payment date saved'}
+      </div>
+
+      ${
+        Array.isArray(item.lastPayments) && item.lastPayments.length > 1
+          ? `<div class="paid-card-payments">
+              Previous: ${
+                item.lastPayments
+                  .slice()
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .slice(1, 4)
+                  .map(p => `$${Number(p.amount || 0).toFixed(2)}`)
+                  .join(', ')
+              }
+            </div>`
+          : ''
+      }
+    `;
+
     paidCardsContainer.appendChild(card);
-    makeSwipeToDelete(card, doc.id, item.name);
+    makeSwipeToDelete(card, doc.id, item.name || 'Untitled');
   });
 }
 
+async function deleteOldPaidItems() {
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+  const snapshot = await db.collection('items').get();
+
+  const oldPaidDocs = [];
+
+  snapshot.docs.forEach(doc => {
+    const item = doc.data();
+
+    const paid = Number(item.paid) || 0;
+    const cost = Number(item.cost) || 0;
+    const remaining = Math.max(cost - paid, 0);
+    const isFullyPaid = item.archived || remaining <= 0.001;
+
+    if (!isFullyPaid) return;
+
+    const payments = Array.isArray(item.lastPayments) ? item.lastPayments : [];
+
+    if (!payments.length) return;
+
+    const latestPayment = payments
+      .slice()
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+    if (!latestPayment?.date) return;
+
+    const latestDate = new Date(latestPayment.date);
+
+    if (latestDate < oneYearAgo) {
+      oldPaidDocs.push({
+        id: doc.id,
+        name: item.name || 'Untitled',
+        latestDate
+      });
+    }
+  });
+
+  if (oldPaidDocs.length === 0) {
+    alert('No fully paid items older than 1 year.');
+    return;
+  }
+
+  const confirmDelete = confirm(
+    `Delete ${oldPaidDocs.length} fully paid item(s) older than 1 year?\n\nThis cannot be undone.`
+  );
+
+  if (!confirmDelete) return;
+
+  const batch = db.batch();
+
+  oldPaidDocs.forEach(item => {
+    const ref = db.collection('items').doc(item.id);
+    batch.delete(ref);
+  });
+
+  await batch.commit();
+
+  alert(`Deleted ${oldPaidDocs.length} old paid item(s).`);
+}
+
+cleanupOldBtn?.addEventListener('click', deleteOldPaidItems);
+
 // Firestore listener
 db.collection('items').orderBy('createdAt').onSnapshot(snapshot=>{
-  const activeItems=[]; 
-  snapshot.docs.forEach(doc=>{ const data=doc.data(); if(!data.archived) activeItems.push(doc); });
-  renderActiveItems(activeItems); 
-  renderPaidCards(snapshot.docs);
+  const activeItems = [];
+
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+    if (!data.archived) activeItems.push(doc);
+  });
+
+  renderActiveItems(activeItems);
+renderPaidCards(snapshot.docs);
 });
 </script>
 
