@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Travel Expenses</title>
+
+<style>
+  @font-face { font-family: 'LovelyCoffee'; src: url('LovelyCoffee.ttf') format('truetype'); }
+  @font-face { font-family: 'LouisGeorgeCafe'; src: url('LouisGeorgeCafe.ttf') format('truetype'); }
+
+  body {
+    font-family: 'LouisGeorgeCafe', sans-serif;
+    background: url('watercolor.png') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+    color: #333;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(20px);
+    z-index: -1;
+  }
+
+  h1 {
+    font-family: 'LovelyCoffee', cursive;
+    font-size: 50px;
+    text-align: center;
+    margin: 18px 0;
+  }
+
+  h2 {
+    padding: 0 10px;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 15px;
+    margin: 0 auto;
+    max-width: 400px;
+  }
+
+  input[type="text"], input[type="number"], select {
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 12px;
+    border: 1px solid #ccc;
+    background: #fff;
+    font-family: 'LouisGeorgeCafe', sans-serif;
+  }
+
+  button {
+    padding: 10px 10px;
+    font-size: 16px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    background: #cbc4d6;
+    color: black;
+    font-weight: 600;
+    transition: opacity 0.2s;
+    font-family: 'LouisGeorgeCafe', sans-serif;
+  }
+
+  button:hover { opacity: 0.85; }
+
+  .back-btn {
+    position: fixed;
+    left: 14px;
+    top: 14px;
+    z-index: 1200;
+
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-decoration: none;
+    font-size: 22px;
+    color: #333;
+
+    background: rgba(255,255,255,0.38);
+    border: 1px solid rgba(255,255,255,0.6);
+
+    backdrop-filter: blur(18px) saturate(180%);
+    -webkit-backdrop-filter: blur(18px) saturate(180%);
+
+    box-shadow:
+      0 6px 18px rgba(0,0,0,0.12),
+      inset 0 1px 0 rgba(255,255,255,0.75);
+  }
+
+  .travel-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+    padding-bottom: 80px;
+  }
+
+  .travel-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+
+    background: rgba(255,255,255,0.25);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+
+    border-radius: 16px;
+    font-size: 16px;
+    border: 1px solid rgba(255,255,255,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    margin-bottom: 8px;
+    cursor: grab;
+  }
+
+  .travel-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  .travel-category {
+    display: inline-block;
+    width: fit-content;
+    margin-top: 4px;
+
+    padding: 3px 8px;
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.45);
+  }
+
+  .travel-card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+    gap: 12px;
+  }
+
+  .travel-card-bottom input {
+    width: 80px;
+    padding: 6px 8px;
+    font-size: 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.3);
+    outline: none;
+  }
+
+  .remaining {
+    font-size: 14px;
+    min-width: 90px;
+    text-align: right;
+  }
+
+  .paid-progress {
+    font-size: 13px;
+    opacity: 0.75;
+    margin-top: -2px;
+  }
+
+  .travel-meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #666;
+  }
+
+  .paid-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    padding: 0 10px;
+    margin-top: 12px;
+  }
+
+  .paid-heading-row h2 {
+    margin: 0;
+    padding: 0;
+  }
+
+  .show-old-toggle {
+    padding: 7px 10px;
+    border-radius: 999px;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    background: rgba(255,255,255,0.32);
+    border: 1px solid rgba(255,255,255,0.45);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  }
+
+  .paid-card {
+    flex: 1 1 180px;
+    min-width: 170px;
+
+    background: rgba(255,255,255,0.30);
+    backdrop-filter: blur(16px) saturate(160%);
+    -webkit-backdrop-filter: blur(16px) saturate(160%);
+
+    border-radius: 16px;
+    padding: 12px;
+
+    font-size: 14px;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.35);
+
+    position: relative;
+  }
+
+  .paid-card.recent-paid {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 218, 205, 0.58),
+      rgba(226, 218, 255, 0.50)
+    );
+
+    border: 1px solid rgba(255,255,255,0.65);
+
+    box-shadow:
+      0 3px 12px rgba(0,0,0,0.08),
+      0 0 16px rgba(255, 190, 170, 0.55),
+      0 0 28px rgba(190, 180, 255, 0.35);
+  }
+
+  .paid-card-name {
+    font-weight: 800;
+    font-size: 15px;
+    margin-bottom: 6px;
+    overflow-wrap: anywhere;
+  }
+
+  .paid-card-status {
+    display: inline-block;
+    width: fit-content;
+
+    padding: 3px 8px;
+    border-radius: 999px;
+
+    font-size: 11px;
+    font-weight: 700;
+
+    background: rgba(255,255,255,0.45);
+    border: 1px solid rgba(255,255,255,0.45);
+
+    margin-bottom: 8px;
+  }
+
+  .paid-card-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+
+    font-size: 13px;
+    margin-top: 4px;
+  }
+
+  .paid-card-label {
+    opacity: 0.65;
+  }
+
+  .paid-card-value {
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .paid-card-date {
+    margin-top: 7px;
+    font-size: 12px;
+    color: #666;
+  }
+
+  .paid-card-payments {
+    margin-top: 8px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255,255,255,0.35);
+
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+  }
+
+  .undo-payment-btn {
+    width: 100%;
+    margin-top: 9px;
+    padding: 7px 9px;
+
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+
+    background: rgba(255,255,255,0.34);
+    border: 1px solid rgba(255,255,255,0.55);
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 8px;
+    justify-content: center;
+    padding-bottom: 80px;
+  }
+
+  #travelTotal {
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    padding: 16px;
+
+    background: rgba(236, 235, 232, 0.95);
+    backdrop-filter: blur(25px) saturate(180%);
+    -webkit-backdrop-filter: blur(25px) saturate(180%);
+
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.55);
+
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.08),
+      0 0 16px rgba(255,255,255,0.35);
+
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 400px;
+    z-index: 999;
+
+    transition: background 180ms ease, box-shadow 180ms ease;
+  }
+
+  #travelTotal.total-clear {
+    background: linear-gradient(
+      135deg,
+      rgba(205, 240, 210, 0.96),
+      rgba(230, 255, 235, 0.94)
+    );
+
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.08),
+      0 0 18px rgba(160, 230, 170, 0.65);
+  }
+
+  #travelTotal.total-low {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 248, 198, 0.96),
+      rgba(255, 236, 205, 0.94)
+    );
+
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.08),
+      0 0 18px rgba(255, 230, 150, 0.65);
+  }
+
+  #travelTotal.total-high {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 218, 205, 0.96),
+      rgba(255, 205, 226, 0.94)
+    );
+
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.08),
+      0 0 18px rgba(255, 170, 190, 0.60);
+  }
+</style>
+</head>
+
+<body>
+
+<a href="expense.html" class="back-btn" title="Back to Credit Card Expenses">‹</a>
+
+<h1>✈️ Travel Expenses</h1>
+
+<form id="travelForm">
+  <input type="text" id="travelName" placeholder="Travel Item" required>
+
+  <input 
+    type="text" 
+    id="travelCost" 
+    inputmode="decimal" 
+    pattern="[0-9]*[.]?[0-9]*" 
+    placeholder="Cost" 
+    required
+  >
+
+  <select id="travelCategory">
+    <option value="Food">Food</option>
+    <option value="Transport">Transport</option>
+    <option value="Hotel">Hotel</option>
+    <option value="Shopping">Shopping</option>
+    <option value="Activities">Activities</option>
+    <option value="Other">Other</option>
+  </select>
+
+  <button type="submit">Add Travel Item</button>
+</form>
+
+<h2>Active Travel Items</h2>
+<div id="travelActiveList" class="travel-card-list"></div>
+
+<div class="paid-heading-row">
+  <h2>Fully Paid Travel Items</h2>
+
+  <button id="toggleOldPaidBtn" type="button" class="show-old-toggle">
+    Show all
+  </button>
+</div>
+
+<div id="travelPaidCards" class="card-container"></div>
+
+<div id="travelTotal">Travel Remaining: $0.00</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+  authDomain: "expenses-a18fa.firebaseapp.com",
+  projectId: "expenses-a18fa",
+  storageBucket: "expenses-a18fa.appspot.com",
+  messagingSenderId: "710897249151",
+  appId: "1:710897249151:web:10a31240f099d8e328c84a",
+  measurementId: "G-Z0TNKB1L00"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const travelForm = document.getElementById('travelForm');
+const travelNameInput = document.getElementById('travelName');
+const travelCostInput = document.getElementById('travelCost');
+const travelCategoryInput = document.getElementById('travelCategory');
+const travelActiveList = document.getElementById('travelActiveList');
+const travelPaidCards = document.getElementById('travelPaidCards');
+const travelTotal = document.getElementById('travelTotal');
+const toggleOldPaidBtn = document.getElementById('toggleOldPaidBtn');
+
+let showAllPaidItems = false;
+
+travelForm.addEventListener('submit', e => {
+  e.preventDefault();
+
+  const name = travelNameInput.value.trim();
+  const cost = parseFloat(travelCostInput.value);
+  const category = travelCategoryInput.value;
+
+  if (name && !isNaN(cost) && cost >= 0) {
+    db.collection('travelItems').add({
+      name,
+      cost,
+      category,
+      paid: 0,
+      archived: false,
+      lastPayments: [],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    travelNameInput.value = '';
+    travelCostInput.value = '';
+    travelCategoryInput.value = 'Food';
+  }
+});
+
+function formatDate(ts) {
+  if (ts.toDate) ts = ts.toDate();
+
+  const d = new Date(ts);
+
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function isSameDay(a, b) {
+  return a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+}
+
+function isOlderThanDays(dateValue, days) {
+  const d = new Date(dateValue);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return d < cutoff;
+}
+
+function makeSwipeToDelete(element, docId, name) {
+  let startX = 0, currentX = 0, dragging = false;
+  const threshold = 100;
+
+  element.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    dragging = true;
+  });
+
+  element.addEventListener('touchmove', e => {
+    if (!dragging) return;
+
+    currentX = e.touches[0].clientX - startX;
+
+    if (currentX < 0) {
+      element.style.transform = `translateX(${currentX}px)`;
+    }
+  });
+
+  element.addEventListener('touchend', handleSwipeEnd);
+
+  element.addEventListener('mousedown', e => {
+    startX = e.clientX;
+    dragging = true;
+    element.style.transition = '';
+  });
+
+  element.addEventListener('mousemove', e => {
+    if (!dragging) return;
+
+    currentX = e.clientX - startX;
+
+    if (currentX < 0) {
+      element.style.transform = `translateX(${currentX}px)`;
+    }
+  });
+
+  element.addEventListener('mouseup', handleSwipeEnd);
+  element.addEventListener('mouseleave', handleSwipeEnd);
+
+  function handleSwipeEnd() {
+    if (!dragging) return;
+
+    dragging = false;
+
+    if (currentX < -threshold) {
+      if (confirm(`Delete "${name}"?`)) {
+        db.collection('travelItems').doc(docId).delete();
+      } else {
+        resetPosition();
+      }
+    } else {
+      resetPosition();
+    }
+
+    currentX = 0;
+  }
+
+  function resetPosition() {
+    element.style.transition = 'transform 0.3s';
+    element.style.transform = 'translateX(0)';
+
+    setTimeout(() => {
+      element.style.transition = '';
+    }, 300);
+  }
+}
+
+function renderActiveTravelItems(items) {
+  travelActiveList.innerHTML = '';
+  let totalRemaining = 0;
+
+  if (items.length === 0) {
+    travelActiveList.innerHTML = `
+      <div style="font-size:13px; opacity:0.65; padding:10px;">
+        No active travel items.
+      </div>
+    `;
+  }
+
+  items.forEach(doc => {
+    const item = doc.data();
+    const id = doc.id;
+
+    const paid = Number(item.paid) || 0;
+    const cost = Number(item.cost) || 0;
+    const remaining = Math.max(cost - paid, 0);
+    const isFullyPaid = remaining <= 0.001;
+
+    const card = document.createElement('div');
+    card.classList.add('travel-card');
+
+    card.innerHTML = `
+      <div class="travel-card-header">
+        <span>${escapeHtml(item.name || 'Untitled')}</span>
+        <span>Cost: $${cost.toFixed(2)}</span>
+      </div>
+
+      <div class="travel-category">
+        ${escapeHtml(item.category || 'Other')}
+      </div>
+
+      <div class="travel-card-bottom">
+        <input
+          type="text"
+          inputmode="decimal"
+          pattern="[0-9]*[.]?[0-9]*"
+          placeholder="0.00"
+          ${isFullyPaid ? 'disabled' : ''}
+        >
+
+        <div class="remaining">
+          Remaining: $${remaining.toFixed(2)}
+        </div>
+      </div>
+
+      <div class="paid-progress">
+        Paid so far: $${paid.toFixed(2)} / $${cost.toFixed(2)}
+      </div>
+
+      <div class="travel-meta">
+        ${item.createdAt ? formatDate(item.createdAt) : ''}
+      </div>
+    `;
+
+    const inputDiv = card.querySelector('input');
+
+    inputDiv.addEventListener('change', () => {
+      let payment = parseFloat(inputDiv.value);
+
+      if (isNaN(payment) || payment <= 0) {
+        inputDiv.value = '';
+        return;
+      }
+
+      if (payment > remaining + 0.001) {
+        inputDiv.value = '';
+        alert('Payment is more than remaining balance.');
+        return;
+      }
+
+      const newPaid = paid + payment;
+      const isNowFullyPaid = cost - newPaid <= 0.001;
+
+      db.collection('travelItems').doc(id).update({
+        paid: newPaid,
+        archived: isNowFullyPaid,
+        lastPayments: firebase.firestore.FieldValue.arrayUnion({
+          amount: payment,
+          date: new Date().toISOString()
+        })
+      }).then(() => {
+        inputDiv.value = '';
+      });
+    });
+
+    makeSwipeToDelete(card, id, item.name || 'Untitled');
+
+    travelActiveList.appendChild(card);
+    totalRemaining += remaining;
+  });
+
+  travelTotal.textContent = `Travel Remaining: $${totalRemaining.toFixed(2)}`;
+
+  travelTotal.classList.remove('total-clear', 'total-low', 'total-high');
+
+  if (totalRemaining <= 0.001) {
+    travelTotal.classList.add('total-clear');
+  } else if (totalRemaining < 100) {
+    travelTotal.classList.add('total-low');
+  } else {
+    travelTotal.classList.add('total-high');
+  }
+}
+
+function renderPaidTravelCards(items) {
+  travelPaidCards.innerHTML = '';
+
+  const paidItems = items
+    .map(doc => {
+      const item = doc.data();
+      const payments = Array.isArray(item.lastPayments) ? item.lastPayments : [];
+
+      const latestPayment = payments.length
+        ? payments.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0]
+        : null;
+
+      return {
+        doc,
+        item,
+        latestPayment,
+        latestDate: latestPayment ? new Date(latestPayment.date) : new Date(0)
+      };
+    })
+    .filter(({ item }) => {
+      const paid = Number(item.paid) || 0;
+      return item.archived || paid > 0;
+    })
+    .filter(({ latestDate }) => {
+      if (showAllPaidItems) return true;
+      if (!latestDate || latestDate.getTime() === 0) return true;
+      return !isOlderThanDays(latestDate, 30);
+    })
+    .sort((a, b) => b.latestDate - a.latestDate);
+
+  if (paidItems.length === 0) {
+    travelPaidCards.innerHTML = `
+      <div style="font-size:13px; opacity:0.65; padding:10px;">
+        No recent paid travel items. Tap “Show all” to view older ones.
+      </div>
+    `;
+    return;
+  }
+
+  paidItems.forEach(({ doc, item, latestPayment }) => {
+    const paid = Number(item.paid) || 0;
+    const cost = Number(item.cost) || 0;
+    const remaining = Math.max(cost - paid, 0);
+    const isFullyPaid = remaining <= 0.001;
+
+    const latestAmount = latestPayment ? Number(latestPayment.amount) || 0 : 0;
+    const latestDate = latestPayment ? latestPayment.date : null;
+
+    const card = document.createElement('div');
+    card.classList.add('paid-card');
+
+    const latestDateObj = latestDate ? new Date(latestDate) : null;
+    const paidToday = latestDateObj ? isSameDay(latestDateObj, new Date()) : false;
+
+    if (latestDate) {
+      const daysAgo = (Date.now() - new Date(latestDate).getTime()) / (1000 * 60 * 60 * 24);
+
+      if (daysAgo <= 7) {
+        card.classList.add('recent-paid');
+      }
+    }
+
+    card.innerHTML = `
+      <div class="paid-card-name">
+        ${escapeHtml(item.name || 'Untitled')}
+        ${paidToday ? '<span class="paid-today-badge">Paid today</span>' : ''}
+      </div>
+
+      <div class="paid-card-status">
+        ${isFullyPaid ? 'Fully paid' : 'Part paid'}
+      </div>
+
+      <div class="travel-category">
+        ${escapeHtml(item.category || 'Other')}
+      </div>
+
+      <div class="paid-card-row">
+        <span class="paid-card-label">Latest payment</span>
+        <span class="paid-card-value">$${latestAmount.toFixed(2)}</span>
+      </div>
+
+      <div class="paid-card-row">
+        <span class="paid-card-label">Total paid</span>
+        <span class="paid-card-value">$${paid.toFixed(2)} / $${cost.toFixed(2)}</span>
+      </div>
+
+      ${
+        !isFullyPaid
+          ? `<div class="paid-card-row">
+              <span class="paid-card-label">Still owing</span>
+              <span class="paid-card-value">$${remaining.toFixed(2)}</span>
+            </div>`
+          : ''
+      }
+
+      <div class="paid-card-date">
+        ${latestDate ? `Paid on ${formatDate(latestDate)}` : 'No payment date saved'}
+      </div>
+
+      ${
+        Array.isArray(item.lastPayments) && item.lastPayments.length > 1
+          ? `<div class="paid-card-payments">
+              Previous: ${
+                item.lastPayments
+                  .slice()
+                  .sort((a, b) => new Date(b.date) - new Date(a.date))
+                  .slice(1, 4)
+                  .map(p => `$${Number(p.amount || 0).toFixed(2)}`)
+                  .join(', ')
+              }
+            </div>`
+          : ''
+      }
+
+      ${
+        latestPayment
+          ? `<button class="undo-payment-btn" type="button" data-doc-id="${doc.id}">
+              Undo latest payment
+            </button>`
+          : ''
+      }
+    `;
+
+    travelPaidCards.appendChild(card);
+    makeSwipeToDelete(card, doc.id, item.name || 'Untitled');
+  });
+}
+
+async function undoLatestPayment(docId) {
+  const ref = db.collection('travelItems').doc(docId);
+  const snap = await ref.get();
+
+  if (!snap.exists) return;
+
+  const item = snap.data();
+  const payments = Array.isArray(item.lastPayments) ? item.lastPayments : [];
+
+  if (!payments.length) {
+    alert('No payment to undo.');
+    return;
+  }
+
+  const sortedPayments = payments
+    .slice()
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const latestPayment = sortedPayments[0];
+  const latestAmount = Number(latestPayment.amount) || 0;
+
+  const ok = confirm(
+    `Undo latest payment of $${latestAmount.toFixed(2)} for "${item.name || 'Untitled'}"?`
+  );
+
+  if (!ok) return;
+
+  const newPayments = payments.filter(p => {
+    return !(Number(p.amount) === Number(latestPayment.amount) && p.date === latestPayment.date);
+  });
+
+  const currentPaid = Number(item.paid) || 0;
+  const newPaid = Math.max(currentPaid - latestAmount, 0);
+
+  await ref.update({
+    paid: newPaid,
+    archived: false,
+    lastPayments: newPayments
+  });
+}
+
+travelPaidCards.addEventListener('click', e => {
+  const btn = e.target.closest('.undo-payment-btn');
+  if (!btn) return;
+
+  e.stopPropagation();
+  undoLatestPayment(btn.dataset.docId);
+});
+
+toggleOldPaidBtn?.addEventListener('click', () => {
+  showAllPaidItems = !showAllPaidItems;
+  toggleOldPaidBtn.textContent = showAllPaidItems ? 'Show recent' : 'Show all';
+
+  db.collection('travelItems').orderBy('createdAt').get().then(snapshot => {
+    renderPaidTravelCards(snapshot.docs);
+  });
+});
+
+db.collection('travelItems').orderBy('createdAt').onSnapshot(snapshot => {
+  const activeItems = [];
+
+  snapshot.docs.forEach(doc => {
+    const data = doc.data();
+
+    if (!data.archived) {
+      activeItems.push(doc);
+    }
+  });
+
+  renderActiveTravelItems(activeItems);
+  renderPaidTravelCards(snapshot.docs);
+});
+</script>
+
+</body>
+</html>
