@@ -389,6 +389,37 @@
     padding-bottom: 80px; /* adjust if needed */
 }
 
+.travel-fab {
+  position: fixed;
+  right: 16px;
+  top: 16px;
+  z-index: 1200;
+
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 25px;
+  text-decoration: none;
+
+  background: rgba(255,255,255,0.38);
+  border: 1px solid rgba(255,255,255,0.6);
+
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+
+  box-shadow:
+    0 6px 18px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.75);
+}
+
+.travel-fab:hover {
+  opacity: 0.9;
+}
 
 </style>
 
@@ -431,6 +462,10 @@
 <div id="paidCards" class="card-container"></div>
 
 <div id="total">Total Remaining: $0.00</div>
+
+<a href="travel.html" class="travel-fab" title="Travel Expenses">
+  ✈️
+</a>
 
 <div class="bottom-nav">
 </div>
