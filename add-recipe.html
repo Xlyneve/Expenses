@@ -223,7 +223,6 @@
 }
 
   function autoFormatRecipe(text) {
-
   const lines = cleanOCRText(text)
     .split(/\r?\n/)
     .map(l => l.trim())
@@ -232,15 +231,13 @@
   let title = lines[0] || "Untitled Recipe";
   let ingredients = [];
   let instructions = [];
-
   let mode = "";
 
   for (let i = 1; i < lines.length; i++) {
-
     const line = cleanLine(lines[i]);
     const lower = line.toLowerCase();
 
-    if (/^(ingredients?)$/i.test(lower)) {
+    if (/^ingredients?$/i.test(lower)) {
       mode = "ingredients";
       continue;
     }
@@ -252,58 +249,12 @@
 
     if (!line) continue;
 
-    if (mode === "ingredients") {
-      ingredients.push(line);
-      continue;
-    }
-
-    if (mode === "instructions") {
-      instructions.push(line);
-      continue;
-    }
+    if (mode === "ingredients") ingredients.push(line);
+    if (mode === "instructions") instructions.push(line);
   }
 
-  return {
-    title,
-    ingredients,
-    instructions
-  };
+  return { title, ingredients, instructions };
 }
-
-    function looksLikeIngredient(line) {
-      const lower = line.toLowerCase();
-
-      return (
-        /\b\d+\s?(g|kg|ml|l|cup|cups|tbsp|tsp|tablespoon|teaspoon|pkt|pack|can|clove|cloves|bottle)\b/i.test(line) ||
-        /(salt|pepper|oil|garlic|onion|chicken|beef|pork|fish|egg|flour|sugar|milk|butter|cream|cheese|pesto|spinach|almond|courgette|fettuccine|parmesan)/i.test(lower)
-      );
-    }
-
-    for (let i = 1; i < lines.length; i++) {
-      const line = cleanLine(lines[i]);
-      const lower = line.toLowerCase();
-
-      if (!line) continue;
-
-      if (
-        lower.includes("ingredients") ||
-        lower.includes("you need") ||
-        lower.includes("from the pantry") ||
-        lower.includes("from the cool pouch") ||
-        lower.includes("allergens")
-      ) {
-        continue;
-      }
-
-      if (looksLikeInstruction(line)) {
-        instructions.push(line);
-      } else if (looksLikeIngredient(line)) {
-        ingredients.push(line);
-      }
-    }
-
-    return { title, ingredients, instructions };
-  }
 
   function preprocessImage(file) {
     return new Promise((resolve, reject) => {
