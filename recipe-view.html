@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe View</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Tahoma, sans-serif;
+      background: #f4f1f6;
+      color: #333;
+      padding: 22px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .back-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: white;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    h1 {
+      margin: 0 0 18px;
+      font-size: 2rem;
+    }
+
+    h2 {
+      margin: 24px 0 12px;
+      font-size: 1.25rem;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.75);
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      backdrop-filter: blur(14px);
+      margin-bottom: 16px;
+    }
+
+    .ingredient {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .ingredient:last-child {
+      border-bottom: none;
+    }
+
+    .ingredient input {
+      margin-top: 3px;
+      transform: scale(1.15);
+    }
+
+    .ingredient span {
+      line-height: 1.4;
+    }
+
+    .ingredient input:checked + span {
+      text-decoration: line-through;
+      color: #999;
+    }
+
+    .steps {
+      padding-left: 22px;
+      line-height: 1.55;
+    }
+
+    .steps li {
+      margin-bottom: 12px;
+    }
+
+    .loading, .error {
+      text-align: center;
+      color: #777;
+      margin-top: 40px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 1.55rem;
+      }
+
+      .header {
+        align-items: flex-start;
+      }
+
+      .back-btn {
+        padding: 10px 14px;
+        font-size: 0.9rem;
+      }
+
+      input,
+      textarea {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="location.href='recipes.html'">← Back</button>
+  </div>
+
+  <div id="loading" class="loading">Loading recipe...</div>
+  <div id="error" class="error" style="display:none;">Recipe not found.</div>
+
+  <main id="recipeContent" style="display:none;">
+    <h1 id="recipeTitle"></h1>
+
+    <section class="card">
+      <h2>Ingredients</h2>
+      <div id="ingredientsList"></div>
+    </section>
+
+    <section class="card">
+      <h2>Instructions</h2>
+      <ol id="instructionsList" class="steps"></ol>
+    </section>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+      authDomain: "expenses-a18fa.firebaseapp.com",
+      projectId: "expenses-a18fa",
+      storageBucket: "expenses-a18fa.appspot.com",
+      messagingSenderId: "710897249151",
+      appId: "1:710897249151:web:10a31240f099d8e328c84a",
+      measurementId: "G-Z0TNKB1L00"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const params = new URLSearchParams(window.location.search);
+    const recipeId = params.get("id");
+
+    const loading = document.getElementById("loading");
+    const error = document.getElementById("error");
+    const recipeContent = document.getElementById("recipeContent");
+    const recipeTitle = document.getElementById("recipeTitle");
+    const ingredientsList = document.getElementById("ingredientsList");
+    const instructionsList = document.getElementById("instructionsList");
+
+    async function loadRecipe() {
+      if (!recipeId) {
+        loading.style.display = "none";
+        error.style.display = "block";
+        return;
+      }
+
+      try {
+        const recipeRef = doc(db, "recipes", recipeId);
+        const snapshot = await getDoc(recipeRef);
+
+        if (!snapshot.exists()) {
+          loading.style.display = "none";
+          error.style.display = "block";
+          return;
+        }
+
+        const recipe = snapshot.data();
+
+        recipeTitle.textContent = recipe.title || "Untitled Recipe";
+
+        ingredientsList.innerHTML = "";
+        (recipe.ingredients || []).forEach((ingredient, index) => {
+          const row = document.createElement("label");
+          row.className = "ingredient";
+
+          row.innerHTML = `
+            <input type="checkbox" id="ingredient-${index}">
+            <span>${ingredient}</span>
+          `;
+
+          ingredientsList.appendChild(row);
+        });
+
+        instructionsList.innerHTML = "";
+        (recipe.instructions || []).forEach(step => {
+          const li = document.createElement("li");
+          li.textContent = step;
+          instructionsList.appendChild(li);
+        });
+
+        loading.style.display = "none";
+        recipeContent.style.display = "block";
+      } catch (err) {
+        console.error(err);
+        loading.style.display = "none";
+        error.style.display = "block";
+      }
+    }
+
+    loadRecipe();
+  </script>
+</body>
+</html>

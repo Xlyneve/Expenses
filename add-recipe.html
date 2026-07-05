@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add Recipe</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Tahoma, sans-serif;
+      background: #f4f1f6;
+      color: #333;
+      padding: 22px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .back-btn, .save-btn, .format-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: white;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    label {
+      display: block;
+      margin: 18px 0 8px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      border-radius: 18px;
+      padding: 14px 16px;
+      font-size: 1rem;
+      font-family: Tahoma, sans-serif;
+      background: rgba(255,255,255,0.8);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    #rawRecipe {
+      min-height: 220px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .save-btn {
+      background: #fff7c7;
+    }
+
+    .hint {
+      color: #777;
+      font-size: 0.85rem;
+      margin-top: 8px;
+    }
+	
+	@media (max-width: 600px) {
+  body {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 1.55rem;
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .add-btn,
+  .back-btn,
+  .save-btn,
+  .format-btn {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  input,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <button class="back-btn" onclick="location.href='recipes.html'">← Back</button>
+    <h1>Add Recipe</h1>
+  </div>
+
+  <label>Paste full recipe</label>
+  <textarea id="rawRecipe" placeholder="Paste recipe here..."></textarea>
+
+<label>Or scan recipe photo</label>
+<input id="photoInput" type="file" accept="image/*" capture="environment" />
+
+<div class="actions">
+  <button class="format-btn" id="ocrBtn">Read Photo</button>
+</div>
+
+<div id="ocrStatus" class="hint"></div>
+
+  <div class="actions">
+    <button class="format-btn" id="formatBtn">Auto-format</button>
+    <button class="save-btn" id="saveBtn">Save Recipe</button>
+  </div>
+
+  <div class="hint">
+    Tip: Works best if the recipe has headings like Ingredients, Instructions, Method, or Directions.
+  </div>
+
+  <label>Recipe title</label>
+  <input id="titleInput" placeholder="Recipe title" />
+
+  <label>Ingredients</label>
+  <textarea id="ingredientsInput" placeholder="One ingredient per line"></textarea>
+
+  <label>Instructions</label>
+  <textarea id="instructionsInput" placeholder="One step per line"></textarea>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+      authDomain: "expenses-a18fa.firebaseapp.com",
+      projectId: "expenses-a18fa",
+      storageBucket: "expenses-a18fa.appspot.com",
+      messagingSenderId: "710897249151",
+      appId: "1:710897249151:web:10a31240f099d8e328c84a",
+      measurementId: "G-Z0TNKB1L00"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const rawRecipe = document.getElementById("rawRecipe");
+    const titleInput = document.getElementById("titleInput");
+    const ingredientsInput = document.getElementById("ingredientsInput");
+    const instructionsInput = document.getElementById("instructionsInput");
+    const formatBtn = document.getElementById("formatBtn");
+    const saveBtn = document.getElementById("saveBtn");
+	
+	const photoInput = document.getElementById("photoInput");
+	const ocrBtn = document.getElementById("ocrBtn");
+	const ocrStatus = document.getElementById("ocrStatus");
+
+    function cleanLine(line) {
+      return line
+        .replace(/^[-•*]\s*/, "")
+        .replace(/^\d+[\).\s-]+/, "")
+        .trim();
+    }
+
+    function autoFormatRecipe(text) {
+      const lines = text
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      let title = "";
+      let ingredients = [];
+      let instructions = [];
+
+      let section = "title";
+
+      for (const line of lines) {
+        const lower = line.toLowerCase();
+
+        if (
+          lower.includes("ingredients") ||
+          lower === "you need" ||
+          lower === "what you need"
+        ) {
+          section = "ingredients";
+          continue;
+        }
+
+        if (
+          lower.includes("instructions") ||
+          lower.includes("method") ||
+          lower.includes("directions") ||
+          lower.includes("steps") ||
+          lower.includes("procedure")
+        ) {
+          section = "instructions";
+          continue;
+        }
+
+        if (!title && section === "title") {
+          title = line;
+          continue;
+        }
+
+        if (section === "ingredients") {
+          ingredients.push(cleanLine(line));
+        } else if (section === "instructions") {
+          instructions.push(cleanLine(line));
+        } else {
+          if (!title) title = line;
+        }
+      }
+
+      return { title, ingredients, instructions };
+    }
+
+    formatBtn.addEventListener("click", () => {
+      const text = rawRecipe.value.trim();
+
+      if (!text) {
+        alert("Paste a recipe first.");
+        return;
+      }
+
+      const result = autoFormatRecipe(text);
+
+      titleInput.value = result.title || "";
+      ingredientsInput.value = result.ingredients.join("\n");
+      instructionsInput.value = result.instructions.join("\n");
+    });
+	
+	ocrBtn.addEventListener("click", async () => {
+  const file = photoInput.files[0];
+
+  if (!file) {
+    alert("Choose or take a photo first.");
+    return;
+  }
+
+  ocrBtn.disabled = true;
+  ocrBtn.textContent = "Reading...";
+  ocrStatus.textContent = "Reading photo. This may take a little while...";
+
+  try {
+    const result = await Tesseract.recognize(file, "eng", {
+      logger: m => {
+        if (m.status && m.progress) {
+          ocrStatus.textContent = `${m.status} ${Math.round(m.progress * 100)}%`;
+        }
+      }
+    });
+
+    rawRecipe.value = result.data.text.trim();
+
+    ocrStatus.textContent = "Done. Check the text, then click Auto-format.";
+    ocrBtn.textContent = "Read Photo";
+    ocrBtn.disabled = false;
+  } catch (error) {
+    console.error(error);
+    ocrStatus.textContent = "Could not read photo. Try a clearer photo.";
+    ocrBtn.textContent = "Read Photo";
+    ocrBtn.disabled = false;
+  }
+});
+
+    saveBtn.addEventListener("click", async () => {
+      const title = titleInput.value.trim();
+      const ingredients = ingredientsInput.value
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      const instructions = instructionsInput.value
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+      if (!title) {
+        alert("Please add a recipe title.");
+        return;
+      }
+
+      if (ingredients.length === 0 && instructions.length === 0) {
+        alert("Please add ingredients or instructions.");
+        return;
+      }
+
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Saving...";
+
+      try {
+        await addDoc(collection(db, "recipes"), {
+          title,
+          ingredients,
+          instructions,
+          rawText: rawRecipe.value.trim(),
+          photoUrl: "",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
+        location.href = "recipes.html";
+      } catch (error) {
+        console.error(error);
+        alert("Could not save recipe. Check Firestore rules.");
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Save Recipe";
+      }
+    });
+  </script>
+</body>
+</html>

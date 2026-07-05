@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipes</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Tahoma, sans-serif;
+      background: #f4f1f6;
+      color: #333;
+      padding: 22px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2rem;
+    }
+
+    .add-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 16px;
+      background: white;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .search {
+      width: 100%;
+      box-sizing: border-box;
+      border: none;
+      border-radius: 18px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      font-size: 1rem;
+      background: rgba(255,255,255,0.8);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+    }
+
+    .recipe-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .recipe-card {
+      background: rgba(255,255,255,0.75);
+      border-radius: 22px;
+      padding: 16px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+    }
+
+    .recipe-title {
+      font-size: 1.15rem;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .recipe-meta {
+      font-size: 0.85rem;
+      color: #777;
+    }
+
+    .empty {
+      text-align: center;
+      color: #777;
+      margin-top: 40px;
+    }
+	
+	@media (max-width: 600px) {
+  body {
+    padding: 16px;
+  }
+
+  h1 {
+    font-size: 1.55rem;
+  }
+
+  .header {
+    align-items: flex-start;
+  }
+
+  .add-btn,
+  .back-btn,
+  .save-btn,
+  .format-btn {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+  }
+
+  input,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>Recipes</h1>
+    <button class="add-btn" onclick="location.href='add-recipe.html'">+ Add</button>
+  </div>
+
+  <input id="searchInput" class="search" placeholder="Search recipes..." />
+
+  <div id="recipeList" class="recipe-list"></div>
+  <div id="emptyState" class="empty" style="display:none;">No recipes yet.</div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      orderBy,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Paste your SAME Firebase config here from your expenses project
+   const firebaseConfig = {
+  apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+  authDomain: "expenses-a18fa.firebaseapp.com",
+  projectId: "expenses-a18fa",
+  storageBucket: "expenses-a18fa.appspot.com",
+  messagingSenderId: "710897249151",
+  appId: "1:710897249151:web:10a31240f099d8e328c84a",
+  measurementId: "G-Z0TNKB1L00"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const recipeList = document.getElementById("recipeList");
+    const emptyState = document.getElementById("emptyState");
+    const searchInput = document.getElementById("searchInput");
+
+    let recipes = [];
+
+    function renderRecipes() {
+      const search = searchInput.value.toLowerCase().trim();
+
+      const filtered = recipes.filter(recipe =>
+        recipe.title?.toLowerCase().includes(search)
+      );
+
+      recipeList.innerHTML = "";
+
+      if (filtered.length === 0) {
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      filtered.forEach(recipe => {
+        const card = document.createElement("div");
+        card.className = "recipe-card";
+        card.onclick = () => {
+          location.href = `recipe-view.html?id=${recipe.id}`;
+        };
+
+        const ingredientCount = recipe.ingredients?.length || 0;
+        const stepCount = recipe.instructions?.length || 0;
+
+        card.innerHTML = `
+          <div class="recipe-title">${recipe.title || "Untitled Recipe"}</div>
+          <div class="recipe-meta">
+            ${ingredientCount} ingredients · ${stepCount} steps
+          </div>
+        `;
+
+        recipeList.appendChild(card);
+      });
+    }
+
+    searchInput.addEventListener("input", renderRecipes);
+
+    const q = query(collection(db, "recipes"), orderBy("createdAt", "desc"));
+
+    onSnapshot(q, snapshot => {
+      recipes = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      renderRecipes();
+    });
+  </script>
+</body>
+</html>
