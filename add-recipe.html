@@ -182,48 +182,69 @@
   const ocrStatus = document.getElementById("ocrStatus");
   const cleanBtn = document.getElementById("cleanBtn");
 
-  function cleanLine(line) {
-    return line
-      .replace(/^[-•*]\s*/, "")
-      .replace(/^\d+[\).\s-]+/, "")
-      .replace(/\s{2,}/g, " ")
-      .trim();
-  }
+ 
 
-  function cleanOCRText(text) {
-    return text
-      .replace(/[|~^_=<>[\]{}]/g, " ")
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
-      .replace(/[`´]/g, "'")
-      .replace(/[•·●]/g, "-")
-      .replace(/\s{2,}/g, " ")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-  }
-  
-  function smartCleanRecipeText(text) {
+  function cleanLine(line) {
+  return line
+    .replace(/^[-•*]\s*/, "")
+    .replace(/^\d+[\).\s-]+/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function cleanOCRText(text) {
   return text
+    .replace(/[|~^_=<>[\]{}]/g, " ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[`´]/g, "'")
+    .replace(/[•·●]/g, "-")
+    .replace(/[^\S\r\n]{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function isHeading(line) {
+  return /^(ingredients?|instructions?|method|directions?|steps?|get prepared|cook the veggies|make the mash|cook the beef|make the sauce|serve up|enjoy)[\s:]*$/i.test(line);
+}
+
+function isInstructionLine(line) {
+  const l = line.trim().toLowerCase();
+
+  return (
+    /[.!?]$/.test(l) ||
+    /^(bring|peel|cut|trim|slice|finely|cook|place|add|cover|steam|transfer|season|drain|return|mash|heat|when|while|toss|stir|serve|divide|top|reduce|boil|simmer|combine|mix|pour|remove)/i.test(l) ||
+    /\b(until|then|about|minutes?|medium|high heat|low heat|fragrant|cooked through|keep warm|to the boil)\b/i.test(l)
+  );
+}
+
+function isIngredientLine(line) {
+  const l = line.trim().toLowerCase();
+
+  if (!l) return false;
+  if (isHeading(l)) return false;
+  if (isInstructionLine(l)) return false;
+
+  return (
+    /\b(cup|cups|tsp|tbsp|tbs|g|kg|ml|l|packet|sachet|bottle|clove|cloves|potato|potatoes|parsnip|carrot|beans|garlic|beef|cream|mustard|paste|butter|milk|salt|pepper|oil|seasoning|powder)\b/i.test(l) ||
+    /^[\d\/.\s]+[a-z]/i.test(l)
+  );
+}
+
+function smartCleanRecipeText(text) {
+  return cleanOCRText(text)
     .split(/\r?\n/)
     .map(line => line.trim())
-    .filter(line => line.length > 2)
-    .filter(line => !/(allergens|hellofresh|foodinfo|received a substitute|product labels)/i.test(line))
+    .filter(line => line.length > 1)
+    .filter(line => !/(allergens|hellofresh|foodinfo|received a substitute|product labels|nutrition|pantry items|grab your meal kit)/i.test(line))
     .filter(line => !/^[^a-zA-Z0-9]+$/.test(line))
-    .filter(line => !/[A-Z]{4,}.*[A-Z]{4,}.*[A-Z]{4,}/.test(line))
-    .map(line => line
-      .replace(/[|~^_=<>[\]{}]/g, " ")
-      .replace(/[“”]/g, '"')
-      .replace(/[‘’]/g, "'")
-      .replace(/[•·●]/g, "-")
-      .replace(/\s{2,}/g, " ")
-      .trim()
-    )
+    .map(line => cleanLine(line))
     .filter(Boolean)
     .join("\n");
 }
 
-  function autoFormatRecipe(text) {
-  const lines = cleanOCRText(text)
+function autoFormatRecipe(text) {
+  const lines = smartCleanRecipeText(text)
     .split(/\r?\n/)
     .map(l => l.trim())
     .filter(Boolean);
@@ -233,25 +254,62 @@
   let instructions = [];
   let mode = "";
 
-  for (let i = 1; i < lines.length; i++) {
-    const line = cleanLine(lines[i]);
-    const lower = line.toLowerCase();
+  const seenIngredients = new Set();
+  const seenInstructions = new Set();
 
-    if (/^ingredients?$/i.test(lower)) {
+  for (let i = 1; i < lines.length; i++) {
+    let line = cleanLine(lines[i]);
+    let lower = line.toLowerCase();
+
+    if (!line) continue;
+
+    if (/^ingredients?:?$/i.test(line)) {
       mode = "ingredients";
       continue;
     }
 
-    if (/^(instructions?|method|directions?|steps?)$/i.test(lower)) {
+    if (/^(instructions?|method|directions?|steps?):?$/i.test(line)) {
       mode = "instructions";
       continue;
     }
 
-    if (!line) continue;
+    if (/^(get prepared|cook the veggies|make the mash|cook the beef|make the sauce|serve up|enjoy)[\s:]*$/i.test(line)) {
+      mode = "instructions";
+      continue;
+    }
 
-    if (mode === "ingredients") ingredients.push(line);
-    if (mode === "instructions") instructions.push(line);
+    // Important fix:
+    // If an instruction-looking sentence appears while still in ingredients,
+    // move it to instructions instead of contaminating ingredients.
+    if (isInstructionLine(line)) {
+      mode = "instructions";
+
+      if (!seenInstructions.has(lower)) {
+        instructions.push(line);
+        seenInstructions.add(lower);
+      }
+
+      continue;
+    }
+
+    if (mode === "ingredients" || isIngredientLine(line)) {
+      if (!seenIngredients.has(lower)) {
+        ingredients.push(line);
+        seenIngredients.add(lower);
+      }
+      continue;
+    }
+
+    if (mode === "instructions") {
+      if (!seenInstructions.has(lower)) {
+        instructions.push(line);
+        seenInstructions.add(lower);
+      }
+    }
   }
+
+  // Final safety clean: remove accidental instruction sentences from ingredients
+  ingredients = ingredients.filter(item => !isInstructionLine(item));
 
   return { title, ingredients, instructions };
 }
@@ -379,15 +437,24 @@
 }
     const title = titleInput.value.trim();
 
-    const ingredients = ingredientsInput.value
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean);
+    let ingredients = ingredientsInput.value
+  .split(/\r?\n/)
+  .map(line => cleanLine(line))
+  .filter(Boolean)
+  .filter(line => !isInstructionLine(line));
 
-    const instructions = instructionsInput.value
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean);
+let instructions = instructionsInput.value
+  .split(/\r?\n/)
+  .map(line => cleanLine(line))
+  .filter(Boolean);
+
+const movedInstructions = ingredientsInput.value
+  .split(/\r?\n/)
+  .map(line => cleanLine(line))
+  .filter(Boolean)
+  .filter(line => isInstructionLine(line));
+
+instructions = [...movedInstructions, ...instructions];
 
     if (!title) {
       alert("Please add a recipe title.");
