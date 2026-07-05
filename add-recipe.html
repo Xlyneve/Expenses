@@ -381,6 +381,22 @@
   });
 
   saveBtn.addEventListener("click", async () => {
+  
+  if (rawRecipe.value.trim() && (!titleInput.value.trim() || !ingredientsInput.value.trim() || !instructionsInput.value.trim())) {
+  const result = autoFormatRecipe(rawRecipe.value.trim());
+
+  if (!titleInput.value.trim()) {
+    titleInput.value = result.title || "";
+  }
+
+  if (!ingredientsInput.value.trim()) {
+    ingredientsInput.value = result.ingredients.join("\n");
+  }
+
+  if (!instructionsInput.value.trim()) {
+    instructionsInput.value = result.instructions.join("\n");
+  }
+}
     const title = titleInput.value.trim();
 
     const ingredients = ingredientsInput.value
