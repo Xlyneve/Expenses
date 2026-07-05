@@ -276,7 +276,9 @@
       }
     });
 
-    rawRecipe.value = result.data.text.trim();
+    rawRecipe.value = rawRecipe.value
+  ? rawRecipe.value + "\n\n" + result.data.text.trim()
+  : result.data.text.trim();
 
     ocrStatus.textContent = "Done. Check the text, then click Auto-format.";
     ocrBtn.textContent = "Read Photo";
