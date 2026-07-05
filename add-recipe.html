@@ -223,23 +223,52 @@
 }
 
   function autoFormatRecipe(text) {
-    const lines = cleanOCRText(text)
-      .split(/\r?\n/)
-      .map(line => line.trim())
-      .filter(Boolean);
 
-    let title = lines[0] || "Untitled Recipe";
-    let ingredients = [];
-    let instructions = [];
+  const lines = cleanOCRText(text)
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
 
-    function looksLikeInstruction(line) {
-      const lower = line.toLowerCase();
+  let title = lines[0] || "Untitled Recipe";
+  let ingredients = [];
+  let instructions = [];
 
-      return (
-        /^\d+[\).\s-]/.test(line) ||
-        /^(add|mix|cook|boil|fry|bake|stir|pour|heat|serve|place|combine|simmer|drain|reduce|bring|cut|chop|slice|toss|garnish|season|plate)\b/i.test(lower)
-      );
+  let mode = "";
+
+  for (let i = 1; i < lines.length; i++) {
+
+    const line = cleanLine(lines[i]);
+    const lower = line.toLowerCase();
+
+    if (/^(ingredients?)$/i.test(lower)) {
+      mode = "ingredients";
+      continue;
     }
+
+    if (/^(instructions?|method|directions?|steps?)$/i.test(lower)) {
+      mode = "instructions";
+      continue;
+    }
+
+    if (!line) continue;
+
+    if (mode === "ingredients") {
+      ingredients.push(line);
+      continue;
+    }
+
+    if (mode === "instructions") {
+      instructions.push(line);
+      continue;
+    }
+  }
+
+  return {
+    title,
+    ingredients,
+    instructions
+  };
+}
 
     function looksLikeIngredient(line) {
       const lower = line.toLowerCase();
