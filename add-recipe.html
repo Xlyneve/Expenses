@@ -181,12 +181,17 @@
 	const ocrBtn = document.getElementById("ocrBtn");
 	const ocrStatus = document.getElementById("ocrStatus");
 
-    function cleanLine(line) {
-      return line
-        .replace(/^[-•*]\s*/, "")
-        .replace(/^\d+[\).\s-]+/, "")
-        .trim();
-    }
+   function cleanOCRText(text) {
+  return text
+    .replace(/[|~^_=<>[\]{}]/g, " ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[`´]/g, "'")
+    .replace(/[•·●]/g, "-")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
     function autoFormatRecipe(text) {
   const lines = text
@@ -323,6 +328,12 @@
         }
       }
     });
+	
+	const cleanedText = cleanOCRText(result.data.text);
+
+rawRecipe.value = rawRecipe.value
+  ? rawRecipe.value + "\n\n" + cleanedText
+  : cleanedText;
 
     rawRecipe.value = rawRecipe.value
   ? rawRecipe.value + "\n\n" + result.data.text.trim()
