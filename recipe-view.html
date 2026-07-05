@@ -82,18 +82,24 @@
       color: #999;
     }
 
-    input, textarea {
-      width: 100%;
-      box-sizing: border-box;
-      border: none;
-      border-radius: 18px;
-      padding: 14px 16px;
-      font-size: 1rem;
-      font-family: Tahoma, sans-serif;
-      background: rgba(255,255,255,0.8);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.06);
-      margin-bottom: 12px;
-    }
+    input:not([type="checkbox"]), textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 18px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  font-family: Tahoma, sans-serif;
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+  margin-bottom: 12px;
+}
+
+.ingredient input[type="checkbox"] {
+  width: auto;
+  margin-top: 3px;
+  transform: scale(1.15);
+}
 
     textarea {
       min-height: 140px;
