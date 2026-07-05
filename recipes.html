@@ -125,6 +125,134 @@
       margin-top: 40px;
     }
 	
+	.header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.shop-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: white;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.shopping-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(80, 75, 90, 0.22);
+  backdrop-filter: blur(10px);
+  z-index: 50;
+  padding: 18px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.shopping-panel {
+  max-width: 620px;
+  margin: 30px auto;
+  background: rgba(255,255,255,0.86);
+  border-radius: 28px;
+  padding: 20px;
+  box-shadow: 0 12px 35px rgba(0,0,0,0.16);
+}
+
+.shopping-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.shopping-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.close-btn {
+  border: none;
+  background: rgba(255,255,255,0.8);
+  border-radius: 999px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 1.4rem;
+}
+
+.shopping-subtitle {
+  color: #666;
+  margin: 12px 0;
+  font-size: 0.95rem;
+}
+
+.shopping-recipe-choices {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.shopping-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.shopping-choice input {
+  width: 18px;
+  height: 18px;
+}
+
+.build-btn {
+  width: 100%;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 16px;
+  background: #fff4bf;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  cursor: pointer;
+  font-size: 1rem;
+  margin: 8px 0 16px;
+}
+
+.shopping-ingredients {
+  display: grid;
+  gap: 10px;
+}
+
+.shopping-ingredient-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(255,255,255,0.72);
+  border-radius: 16px;
+  padding: 12px;
+  line-height: 1.4;
+}
+
+.shopping-ingredient-item input {
+  margin-top: 2px;
+  width: 18px;
+  height: 18px;
+}
+
+.shopping-ingredient-item.checked span {
+  text-decoration: line-through;
+  color: #999;
+}
+
+.shopping-empty {
+  color: #777;
+  text-align: center;
+  padding: 16px;
+}
+	
 	@media (max-width: 600px) {
   body {
     padding: 16px;
@@ -158,14 +286,35 @@
 
 <body>
   <div class="header">
-    <h1>Recipes</h1>
+  <h1>Recipes</h1>
+
+  <div class="header-actions">
+    <button class="shop-btn" id="shoppingBtn">🛒</button>
     <button class="add-btn" onclick="location.href='add-recipe.html'">+ Add</button>
   </div>
+</div>
 
   <input id="searchInput" class="search" placeholder="Search recipes..." />
 
   <div id="recipeList" class="recipe-list"></div>
   <div id="emptyState" class="empty" style="display:none;">No recipes yet.</div>
+  
+  <div id="shoppingOverlay" class="shopping-overlay" style="display:none;">
+  <div class="shopping-panel">
+    <div class="shopping-header">
+      <h2>Shopping List</h2>
+      <button id="closeShopping" class="close-btn">×</button>
+    </div>
+
+    <p class="shopping-subtitle">Choose recipes you are buying ingredients for:</p>
+
+    <div id="shoppingRecipeChoices" class="shopping-recipe-choices"></div>
+
+    <button id="buildShoppingList" class="build-btn">Show Ingredients</button>
+
+    <div id="shoppingIngredients" class="shopping-ingredients"></div>
+  </div>
+</div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -196,6 +345,13 @@
     const recipeList = document.getElementById("recipeList");
     const emptyState = document.getElementById("emptyState");
     const searchInput = document.getElementById("searchInput");
+	
+	const shoppingBtn = document.getElementById("shoppingBtn");
+	const shoppingOverlay = document.getElementById("shoppingOverlay");
+	const closeShopping = document.getElementById("closeShopping");
+	const shoppingRecipeChoices = document.getElementById("shoppingRecipeChoices");
+	const buildShoppingList = document.getElementById("buildShoppingList");
+	const shoppingIngredients = document.getElementById("shoppingIngredients");
 
     let recipes = [];
 
@@ -287,6 +443,125 @@ deleteBtn.addEventListener("click", async (e) => {
 });
   });
 }
+function renderShoppingRecipes() {
+  shoppingRecipeChoices.innerHTML = "";
+  shoppingIngredients.innerHTML = "";
+
+  if (recipes.length === 0) {
+    shoppingRecipeChoices.innerHTML = `
+      <div class="shopping-empty">No recipes available.</div>
+    `;
+    return;
+  }
+
+  recipes.forEach(recipe => {
+    const row = document.createElement("label");
+    row.className = "shopping-choice";
+
+    row.innerHTML = `
+      <input type="checkbox" value="${recipe.id}">
+      <span>${recipe.title || "Untitled Recipe"}</span>
+    `;
+
+    shoppingRecipeChoices.appendChild(row);
+  });
+}
+
+function normaliseIngredients(ingredients) {
+  if (!ingredients) return [];
+
+  if (Array.isArray(ingredients)) {
+    return ingredients
+      .map(item => {
+        if (typeof item === "string") return item.trim();
+        if (item?.name) return item.name.trim();
+        return "";
+      })
+      .filter(Boolean);
+  }
+
+  if (typeof ingredients === "string") {
+    return ingredients
+      .split("\n")
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function renderShoppingIngredients() {
+  const selectedIds = [...shoppingRecipeChoices.querySelectorAll("input:checked")]
+    .map(input => input.value);
+
+  shoppingIngredients.innerHTML = "";
+
+  if (selectedIds.length === 0) {
+    shoppingIngredients.innerHTML = `
+      <div class="shopping-empty">Tick at least one recipe first.</div>
+    `;
+    return;
+  }
+
+  let allIngredients = [];
+
+  selectedIds.forEach(id => {
+    const recipe = recipes.find(item => item.id === id);
+    if (!recipe) return;
+
+    const ingredients = normaliseIngredients(recipe.ingredients);
+
+    ingredients.forEach(ingredient => {
+      allIngredients.push({
+        recipeTitle: recipe.title || "Untitled Recipe",
+        ingredient
+      });
+    });
+  });
+
+  if (allIngredients.length === 0) {
+    shoppingIngredients.innerHTML = `
+      <div class="shopping-empty">No ingredients found for selected recipes.</div>
+    `;
+    return;
+  }
+
+  allIngredients.forEach(item => {
+    const row = document.createElement("label");
+    row.className = "shopping-ingredient-item";
+
+    row.innerHTML = `
+      <input type="checkbox">
+      <span>${item.ingredient}</span>
+    `;
+
+    const checkbox = row.querySelector("input");
+
+    checkbox.addEventListener("change", () => {
+      row.classList.toggle("checked", checkbox.checked);
+    });
+
+    shoppingIngredients.appendChild(row);
+  });
+}
+
+shoppingBtn.addEventListener("click", () => {
+  shoppingOverlay.style.display = "block";
+  renderShoppingRecipes();
+});
+
+closeShopping.addEventListener("click", () => {
+  shoppingOverlay.style.display = "none";
+});
+
+shoppingOverlay.addEventListener("click", (e) => {
+  if (e.target === shoppingOverlay) {
+    shoppingOverlay.style.display = "none";
+  }
+});
+
+buildShoppingList.addEventListener("click", renderShoppingIngredients);
+
 searchInput.addEventListener("input", renderRecipes);
 
 const q = query(collection(db, "recipes"), orderBy("createdAt", "desc"));
