@@ -22,17 +22,7 @@
       margin-bottom: 20px;
     }
 	
-	.recipe-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  background: rgba(255,255,255,0.75);
-  border-radius: 22px;
-  padding: 16px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-  cursor: pointer;
-  backdrop-filter: blur(14px);
-}
+	
 
 .recipe-thumb {
   width: 62px;
@@ -61,7 +51,46 @@
       cursor: pointer;
       font-size: 0.95rem;
     }
+	
+	.recipe-card-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+}
 
+.recipe-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255,255,255,0.75);
+  border-radius: 22px;
+  padding: 16px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  transition: transform 0.25s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.recipe-card-wrap.show-delete .recipe-card {
+  transform: translateX(-88px);
+}
+
+.delete-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 78px;
+  border: none;
+  background: #ffe1e1;
+  color: #8a2b2b;
+  cursor: pointer;
+  font-size: 0.8rem;
+  z-index: 1;
+}
+	
     .search {
       width: 100%;
       box-sizing: border-box;
@@ -141,12 +170,14 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      query,
-      orderBy,
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  doc,
+  deleteDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // Paste your SAME Firebase config here from your expenses project
    const firebaseConfig = {
@@ -169,64 +200,105 @@
     let recipes = [];
 
     function renderRecipes() {
-      const search = searchInput.value.toLowerCase().trim();
+  const search = searchInput.value.toLowerCase().trim();
 
-      const filtered = recipes.filter(recipe =>
-        recipe.title?.toLowerCase().includes(search)
-      );
+  const filtered = recipes.filter(recipe =>
+    recipe.title?.toLowerCase().includes(search)
+  );
 
-      recipeList.innerHTML = "";
+  recipeList.innerHTML = "";
 
-      if (filtered.length === 0) {
-        emptyState.style.display = "block";
-        return;
-      }
-
-      emptyState.style.display = "none";
-
-      filtered.forEach(recipe => {
-        const card = document.createElement("div");
-        card.className = "recipe-card";
-        card.onclick = () => {
-          location.href = `recipe-view.html?id=${recipe.id}`;
-        };
-
-        const ingredientCount = recipe.ingredients?.length || 0;
-        const stepCount = recipe.instructions?.length || 0;
-
-        const imageData = recipe.imageBase64 || recipe.photoBase64 || recipe.photoUrl || "";
-
-card.innerHTML = `
-  ${
-    imageData
-      ? `<img class="recipe-thumb" src="${imageData}" alt="">`
-      : `<div class="recipe-thumb"></div>`
+  if (filtered.length === 0) {
+    emptyState.style.display = "block";
+    return;
   }
 
-  <div class="recipe-info">
-    <div class="recipe-title">${recipe.title || "Untitled Recipe"}</div>
-    <div class="recipe-meta">
-      ${ingredientCount} ingredients · ${stepCount} steps
-    </div>
-  </div>
-`;
+  emptyState.style.display = "none";
 
-        recipeList.appendChild(card);
-      });
-    }
+  filtered.forEach(recipe => {
+    const wrap = document.createElement("div");
+    wrap.className = "recipe-card-wrap";
 
-    searchInput.addEventListener("input", renderRecipes);
+    const card = document.createElement("div");
+    card.className = "recipe-card";
 
-    const q = query(collection(db, "recipes"), orderBy("createdAt", "desc"));
+    const deleteBtn = document.createElement("button");
+    deleteBtn.className = "delete-btn";
+    deleteBtn.textContent = "Delete";
 
-    onSnapshot(q, snapshot => {
-      recipes = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    card.onclick = () => {
+      location.href = `recipe-view.html?id=${recipe.id}`;
+    };
 
-      renderRecipes();
+    const ingredientCount = recipe.ingredients?.length || 0;
+    const stepCount = recipe.instructions?.length || 0;
+    const imageData = recipe.imageBase64 || recipe.photoBase64 || recipe.photoUrl || "";
+
+    card.innerHTML = `
+      ${
+        imageData
+          ? `<img class="recipe-thumb" src="${imageData}" alt="">`
+          : `<div class="recipe-thumb"></div>`
+      }
+
+      <div class="recipe-info">
+        <div class="recipe-title">${recipe.title || "Untitled Recipe"}</div>
+        <div class="recipe-meta">
+          ${ingredientCount} ingredients · ${stepCount} steps
+        </div>
+      </div>
+    `;
+
+    wrap.appendChild(deleteBtn);
+    wrap.appendChild(card);
+    recipeList.appendChild(wrap);
+
+    let startX = 0;
+
+    card.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
     });
+
+    card.addEventListener("touchend", (e) => {
+  const endX = e.changedTouches[0].clientX;
+
+  if (startX - endX > 50) {
+    wrap.classList.add("show-delete");
+  }
+
+  if (endX - startX > 50) {
+    wrap.classList.remove("show-delete");
+  }
+});
+
+card.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  wrap.classList.toggle("show-delete");
+});
+
+deleteBtn.addEventListener("click", async (e) => {
+  e.stopPropagation();
+
+  const confirmDelete = confirm(`Delete "${recipe.title || "this recipe"}"?`);
+  if (!confirmDelete) return;
+
+  await deleteDoc(doc(db, "recipes", recipe.id));
+});
+  });
+}
+searchInput.addEventListener("input", renderRecipes);
+
+const q = query(collection(db, "recipes"), orderBy("createdAt", "desc"));
+
+onSnapshot(q, snapshot => {
+  recipes = snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  }));
+
+  renderRecipes();
+});
   </script>
 </body>
 </html>
