@@ -149,251 +149,249 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
-      authDomain: "expenses-a18fa.firebaseapp.com",
-      projectId: "expenses-a18fa",
-      storageBucket: "expenses-a18fa.appspot.com",
-      messagingSenderId: "710897249151",
-      appId: "1:710897249151:web:10a31240f099d8e328c84a",
-      measurementId: "G-Z0TNKB1L00"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
+    authDomain: "expenses-a18fa.firebaseapp.com",
+    projectId: "expenses-a18fa",
+    storageBucket: "expenses-a18fa.appspot.com",
+    messagingSenderId: "710897249151",
+    appId: "1:710897249151:web:10a31240f099d8e328c84a",
+    measurementId: "G-Z0TNKB1L00"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    const rawRecipe = document.getElementById("rawRecipe");
-    const titleInput = document.getElementById("titleInput");
-    const ingredientsInput = document.getElementById("ingredientsInput");
-    const instructionsInput = document.getElementById("instructionsInput");
-    const formatBtn = document.getElementById("formatBtn");
-    const saveBtn = document.getElementById("saveBtn");
-	
-	const photoInput = document.getElementById("photoInput");
-	const ocrBtn = document.getElementById("ocrBtn");
-	const ocrStatus = document.getElementById("ocrStatus");
+  const rawRecipe = document.getElementById("rawRecipe");
+  const titleInput = document.getElementById("titleInput");
+  const ingredientsInput = document.getElementById("ingredientsInput");
+  const instructionsInput = document.getElementById("instructionsInput");
+  const formatBtn = document.getElementById("formatBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  const photoInput = document.getElementById("photoInput");
+  const ocrBtn = document.getElementById("ocrBtn");
+  const ocrStatus = document.getElementById("ocrStatus");
 
-   function cleanOCRText(text) {
-  return text
-    .replace(/[|~^_=<>[\]{}]/g, " ")
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .replace(/[`´]/g, "'")
-    .replace(/[•·●]/g, "-")
-    .replace(/\s{2,}/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}
-
-    function autoFormatRecipe(text) {
-  const lines = text
-    .split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(Boolean);
-
-  let title = "";
-  let ingredients = [];
-  let instructions = [];
-
-  function looksLikeInstruction(line) {
-    const lower = line.toLowerCase();
-
-    return (
-      /^\d+[\).\s-]/.test(line) ||
-      lower.startsWith("add ") ||
-      lower.startsWith("mix ") ||
-      lower.startsWith("cook ") ||
-      lower.startsWith("boil ") ||
-      lower.startsWith("fry ") ||
-      lower.startsWith("bake ") ||
-      lower.startsWith("stir ") ||
-      lower.startsWith("pour ") ||
-      lower.startsWith("heat ") ||
-      lower.startsWith("serve ") ||
-      lower.startsWith("place ") ||
-      lower.startsWith("combine ") ||
-      lower.startsWith("simmer ") ||
-      lower.startsWith("drain ") ||
-      lower.startsWith("reduce ") ||
-      lower.startsWith("bring ")
-    );
+  function cleanLine(line) {
+    return line
+      .replace(/^[-•*]\s*/, "")
+      .replace(/^\d+[\).\s-]+/, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
   }
 
-  function looksLikeIngredient(line) {
-    const lower = line.toLowerCase();
-
-    return (
-      /^[-•*]/.test(line) ||
-      /\b\d+\s?(g|kg|ml|l|cup|cups|tbsp|tsp|tablespoon|teaspoon|pkt|pack|can|clove|cloves)\b/i.test(line) ||
-      lower.includes("salt") ||
-      lower.includes("pepper") ||
-      lower.includes("oil") ||
-      lower.includes("garlic") ||
-      lower.includes("onion") ||
-      lower.includes("chicken") ||
-      lower.includes("beef") ||
-      lower.includes("pork") ||
-      lower.includes("fish") ||
-      lower.includes("egg") ||
-      lower.includes("flour") ||
-      lower.includes("sugar") ||
-      lower.includes("milk") ||
-      lower.includes("butter")
-    );
+  function cleanOCRText(text) {
+    return text
+      .replace(/[|~^_=<>[\]{}]/g, " ")
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/[`´]/g, "'")
+      .replace(/[•·●]/g, "-")
+      .replace(/\s{2,}/g, " ")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   }
 
-  const cleaned = lines.map(cleanLine);
+  function autoFormatRecipe(text) {
+    const lines = cleanOCRText(text)
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
 
-  title = cleaned[0] || "Untitled Recipe";
+    let title = lines[0] || "Untitled Recipe";
+    let ingredients = [];
+    let instructions = [];
 
-  for (let i = 1; i < cleaned.length; i++) {
-    const line = cleaned[i];
+    function looksLikeInstruction(line) {
+      const lower = line.toLowerCase();
 
-    if (!line) continue;
-
-    const lower = line.toLowerCase();
-
-    if (
-      lower.includes("ingredients") ||
-      lower.includes("you need") ||
-      lower.includes("from the pantry") ||
-      lower.includes("from the cool pouch")
-    ) {
-      continue;
+      return (
+        /^\d+[\).\s-]/.test(line) ||
+        /^(add|mix|cook|boil|fry|bake|stir|pour|heat|serve|place|combine|simmer|drain|reduce|bring|cut|chop|slice|toss|garnish|season|plate)\b/i.test(lower)
+      );
     }
 
-    if (
-      lower.includes("instructions") ||
-      lower.includes("method") ||
-      lower.includes("directions") ||
-      lower.includes("steps") ||
-      lower.includes("get ready") ||
-      lower.includes("cook")
-    ) {
-      continue;
+    function looksLikeIngredient(line) {
+      const lower = line.toLowerCase();
+
+      return (
+        /\b\d+\s?(g|kg|ml|l|cup|cups|tbsp|tsp|tablespoon|teaspoon|pkt|pack|can|clove|cloves|bottle)\b/i.test(line) ||
+        /(salt|pepper|oil|garlic|onion|chicken|beef|pork|fish|egg|flour|sugar|milk|butter|cream|cheese|pesto|spinach|almond|courgette|fettuccine|parmesan)/i.test(lower)
+      );
     }
 
-    if (looksLikeInstruction(line)) {
-      instructions.push(line);
-    } else if (looksLikeIngredient(line)) {
-      ingredients.push(line);
-    } else {
-      ingredients.push(line);
-    }
-  }
+    for (let i = 1; i < lines.length; i++) {
+      const line = cleanLine(lines[i]);
+      const lower = line.toLowerCase();
 
-  return { title, ingredients, instructions };
-}
+      if (!line) continue;
 
-    formatBtn.addEventListener("click", () => {
-      const text = rawRecipe.value.trim();
-
-      if (!text) {
-        alert("Paste a recipe first.");
-        return;
+      if (
+        lower.includes("ingredients") ||
+        lower.includes("you need") ||
+        lower.includes("from the pantry") ||
+        lower.includes("from the cool pouch") ||
+        lower.includes("allergens")
+      ) {
+        continue;
       }
 
-      const result = autoFormatRecipe(text);
+      if (looksLikeInstruction(line)) {
+        instructions.push(line);
+      } else if (looksLikeIngredient(line)) {
+        ingredients.push(line);
+      }
+    }
 
-      titleInput.value = result.title || "";
-      ingredientsInput.value = result.ingredients.join("\n");
-      instructionsInput.value = result.instructions.join("\n");
-    });
-	
-	ocrBtn.addEventListener("click", async () => {
-  const file = photoInput.files[0];
-
-  if (!file) {
-    alert("Choose or take a photo first.");
-    return;
+    return { title, ingredients, instructions };
   }
 
-  ocrBtn.disabled = true;
-  ocrBtn.textContent = "Reading...";
-  ocrStatus.textContent = "Reading photo. This may take a little while...";
+  function preprocessImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
 
-  try {
-    const result = await Tesseract.recognize(file, "eng", {
-      logger: m => {
-        if (m.status && m.progress) {
-          ocrStatus.textContent = `${m.status} ${Math.round(m.progress * 100)}%`;
+      img.onload = () => {
+        const scale = 2;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          const grey = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+          const contrast = grey > 155 ? 255 : 0;
+
+          data[i] = contrast;
+          data[i + 1] = contrast;
+          data[i + 2] = contrast;
         }
-      }
+
+        ctx.putImageData(imageData, 0, 0);
+
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error("Image processing failed"));
+        }, "image/png");
+      };
+
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
     });
-	
-	const cleanedText = cleanOCRText(result.data.text);
-
-rawRecipe.value = rawRecipe.value
-  ? rawRecipe.value + "\n\n" + cleanedText
-  : cleanedText;
-
-    rawRecipe.value = rawRecipe.value
-  ? rawRecipe.value + "\n\n" + result.data.text.trim()
-  : result.data.text.trim();
-
-    ocrStatus.textContent = "Done. Check the text, then click Auto-format.";
-    ocrBtn.textContent = "Read Photo";
-    ocrBtn.disabled = false;
-  } catch (error) {
-    console.error(error);
-    ocrStatus.textContent = "Could not read photo. Try a clearer photo.";
-    ocrBtn.textContent = "Read Photo";
-    ocrBtn.disabled = false;
   }
-});
 
-    saveBtn.addEventListener("click", async () => {
-      const title = titleInput.value.trim();
-      const ingredients = ingredientsInput.value
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean);
+  formatBtn.addEventListener("click", () => {
+    const text = rawRecipe.value.trim();
 
-      const instructions = instructionsInput.value
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean);
+    if (!text) {
+      alert("Paste a recipe first.");
+      return;
+    }
 
-      if (!title) {
-        alert("Please add a recipe title.");
-        return;
-      }
+    const result = autoFormatRecipe(text);
 
-      if (ingredients.length === 0 && instructions.length === 0) {
-        alert("Please add ingredients or instructions.");
-        return;
-      }
+    titleInput.value = result.title || "";
+    ingredientsInput.value = result.ingredients.join("\n");
+    instructionsInput.value = result.instructions.join("\n");
+  });
 
-      saveBtn.disabled = true;
-      saveBtn.textContent = "Saving...";
+  ocrBtn.addEventListener("click", async () => {
+    const file = photoInput.files[0];
 
-      try {
-        await addDoc(collection(db, "recipes"), {
-          title,
-          ingredients,
-          instructions,
-          rawText: rawRecipe.value.trim(),
-          photoUrl: "",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
+    if (!file) {
+      alert("Choose or take a photo first.");
+      return;
+    }
 
-        location.href = "recipes.html";
-      } catch (error) {
-        console.error(error);
-        alert("Could not save recipe. Check Firestore rules.");
-        saveBtn.disabled = false;
-        saveBtn.textContent = "Save Recipe";
-      }
-    });
-  </script>
+    ocrBtn.disabled = true;
+    ocrBtn.textContent = "Reading...";
+    ocrStatus.textContent = "Preparing image...";
+
+    try {
+      const processedImage = await preprocessImage(file);
+
+      const result = await Tesseract.recognize(processedImage, "eng", {
+        logger: m => {
+          if (m.status && m.progress) {
+            ocrStatus.textContent = `${m.status} ${Math.round(m.progress * 100)}%`;
+          }
+        }
+      });
+
+      const cleanedText = cleanOCRText(result.data.text);
+
+      rawRecipe.value = rawRecipe.value
+        ? rawRecipe.value + "\n\n" + cleanedText
+        : cleanedText;
+
+      ocrStatus.textContent = "Done. Check the text, then click Auto-format.";
+    } catch (error) {
+      console.error(error);
+      ocrStatus.textContent = "Could not read photo. Try a closer cropped photo.";
+    }
+
+    ocrBtn.textContent = "Read Photo";
+    ocrBtn.disabled = false;
+  });
+
+  saveBtn.addEventListener("click", async () => {
+    const title = titleInput.value.trim();
+
+    const ingredients = ingredientsInput.value
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    const instructions = instructionsInput.value
+      .split(/\r?\n/)
+      .map(line => line.trim())
+      .filter(Boolean);
+
+    if (!title) {
+      alert("Please add a recipe title.");
+      return;
+    }
+
+    if (ingredients.length === 0 && instructions.length === 0) {
+      alert("Please add ingredients or instructions.");
+      return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    try {
+      await addDoc(collection(db, "recipes"), {
+        title,
+        ingredients,
+        instructions,
+        rawText: rawRecipe.value.trim(),
+        photoUrl: "",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      location.href = "recipes.html";
+    } catch (error) {
+      console.error(error);
+      alert("Could not save recipe. Check Firestore rules.");
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save Recipe";
+    }
+  });
+</script>
 </body>
 </html>
