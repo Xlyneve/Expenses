@@ -130,6 +130,7 @@
 <div id="ocrStatus" class="hint"></div>
 
   <div class="actions">
+	<button class="format-btn" id="cleanBtn">Clean Text</button>
     <button class="format-btn" id="formatBtn">Auto-format</button>
     <button class="save-btn" id="saveBtn">Save Recipe</button>
   </div>
@@ -179,6 +180,7 @@
   const photoInput = document.getElementById("photoInput");
   const ocrBtn = document.getElementById("ocrBtn");
   const ocrStatus = document.getElementById("ocrStatus");
+  const cleanBtn = document.getElementById("cleanBtn");
 
   function cleanLine(line) {
     return line
@@ -199,6 +201,26 @@
       .replace(/\n{3,}/g, "\n\n")
       .trim();
   }
+  
+  function smartCleanRecipeText(text) {
+  return text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line.length > 2)
+    .filter(line => !/(allergens|hellofresh|foodinfo|received a substitute|product labels)/i.test(line))
+    .filter(line => !/^[^a-zA-Z0-9]+$/.test(line))
+    .filter(line => !/[A-Z]{4,}.*[A-Z]{4,}.*[A-Z]{4,}/.test(line))
+    .map(line => line
+      .replace(/[|~^_=<>[\]{}]/g, " ")
+      .replace(/[“”]/g, '"')
+      .replace(/[‘’]/g, "'")
+      .replace(/[•·●]/g, "-")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+    )
+    .filter(Boolean)
+    .join("\n");
+}
 
   function autoFormatRecipe(text) {
     const lines = cleanOCRText(text)
@@ -292,6 +314,17 @@
       img.src = URL.createObjectURL(file);
     });
   }
+  
+  cleanBtn.addEventListener("click", () => {
+  const text = rawRecipe.value.trim();
+
+  if (!text) {
+    alert("Nothing to clean yet.");
+    return;
+  }
+
+  rawRecipe.value = smartCleanRecipeText(text);
+});
 
   formatBtn.addEventListener("click", () => {
     const text = rawRecipe.value.trim();
