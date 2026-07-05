@@ -189,56 +189,104 @@
     }
 
     function autoFormatRecipe(text) {
-      const lines = text
-        .split(/\r?\n/)
-        .map(line => line.trim())
-        .filter(Boolean);
+  const lines = text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
 
-      let title = "";
-      let ingredients = [];
-      let instructions = [];
+  let title = "";
+  let ingredients = [];
+  let instructions = [];
 
-      let section = "title";
+  function looksLikeInstruction(line) {
+    const lower = line.toLowerCase();
 
-      for (const line of lines) {
-        const lower = line.toLowerCase();
+    return (
+      /^\d+[\).\s-]/.test(line) ||
+      lower.startsWith("add ") ||
+      lower.startsWith("mix ") ||
+      lower.startsWith("cook ") ||
+      lower.startsWith("boil ") ||
+      lower.startsWith("fry ") ||
+      lower.startsWith("bake ") ||
+      lower.startsWith("stir ") ||
+      lower.startsWith("pour ") ||
+      lower.startsWith("heat ") ||
+      lower.startsWith("serve ") ||
+      lower.startsWith("place ") ||
+      lower.startsWith("combine ") ||
+      lower.startsWith("simmer ") ||
+      lower.startsWith("drain ") ||
+      lower.startsWith("reduce ") ||
+      lower.startsWith("bring ")
+    );
+  }
 
-        if (
-          lower.includes("ingredients") ||
-          lower === "you need" ||
-          lower === "what you need"
-        ) {
-          section = "ingredients";
-          continue;
-        }
+  function looksLikeIngredient(line) {
+    const lower = line.toLowerCase();
 
-        if (
-          lower.includes("instructions") ||
-          lower.includes("method") ||
-          lower.includes("directions") ||
-          lower.includes("steps") ||
-          lower.includes("procedure")
-        ) {
-          section = "instructions";
-          continue;
-        }
+    return (
+      /^[-•*]/.test(line) ||
+      /\b\d+\s?(g|kg|ml|l|cup|cups|tbsp|tsp|tablespoon|teaspoon|pkt|pack|can|clove|cloves)\b/i.test(line) ||
+      lower.includes("salt") ||
+      lower.includes("pepper") ||
+      lower.includes("oil") ||
+      lower.includes("garlic") ||
+      lower.includes("onion") ||
+      lower.includes("chicken") ||
+      lower.includes("beef") ||
+      lower.includes("pork") ||
+      lower.includes("fish") ||
+      lower.includes("egg") ||
+      lower.includes("flour") ||
+      lower.includes("sugar") ||
+      lower.includes("milk") ||
+      lower.includes("butter")
+    );
+  }
 
-        if (!title && section === "title") {
-          title = line;
-          continue;
-        }
+  const cleaned = lines.map(cleanLine);
 
-        if (section === "ingredients") {
-          ingredients.push(cleanLine(line));
-        } else if (section === "instructions") {
-          instructions.push(cleanLine(line));
-        } else {
-          if (!title) title = line;
-        }
-      }
+  title = cleaned[0] || "Untitled Recipe";
 
-      return { title, ingredients, instructions };
+  for (let i = 1; i < cleaned.length; i++) {
+    const line = cleaned[i];
+
+    if (!line) continue;
+
+    const lower = line.toLowerCase();
+
+    if (
+      lower.includes("ingredients") ||
+      lower.includes("you need") ||
+      lower.includes("from the pantry") ||
+      lower.includes("from the cool pouch")
+    ) {
+      continue;
     }
+
+    if (
+      lower.includes("instructions") ||
+      lower.includes("method") ||
+      lower.includes("directions") ||
+      lower.includes("steps") ||
+      lower.includes("get ready") ||
+      lower.includes("cook")
+    ) {
+      continue;
+    }
+
+    if (looksLikeInstruction(line)) {
+      instructions.push(line);
+    } else if (looksLikeIngredient(line)) {
+      ingredients.push(line);
+    } else {
+      ingredients.push(line);
+    }
+  }
+
+  return { title, ingredients, instructions };
+}
 
     formatBtn.addEventListener("click", () => {
       const text = rawRecipe.value.trim();
