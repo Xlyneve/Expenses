@@ -75,6 +75,20 @@
       text-decoration: line-through;
       color: #999;
     }
+	
+	textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  border-radius: 18px;
+  padding: 14px 16px;
+  font-size: 1rem;
+  font-family: Tahoma, sans-serif;
+  background: rgba(255,255,255,0.8);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+  min-height: 140px;
+  resize: vertical;
+}
 
     .steps {
       padding-left: 22px;
@@ -120,6 +134,7 @@
 <body>
   <div class="header">
     <button class="back-btn" onclick="location.href='recipes.html'">← Back</button>
+	<button class="back-btn" id="editBtn">Edit</button>
   </div>
 
   <div id="loading" class="loading">Loading recipe...</div>
@@ -137,15 +152,29 @@
       <h2>Instructions</h2>
       <ol id="instructionsList" class="steps"></ol>
     </section>
+	
+	<section class="card" id="editBox" style="display:none;">
+  <h2>Edit Recipe</h2>
+
+  <label>Ingredients</label>
+  <textarea id="editIngredients"></textarea>
+
+  <label>Instructions</label>
+  <textarea id="editInstructions"></textarea>
+
+  <button class="back-btn" id="saveEditBtn">Save Changes</button>
+</section>
   </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore,
-      doc,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAvoNBFAEWNDptC8JIJ2TeuczKuFFmbJVk",
@@ -169,6 +198,14 @@
     const recipeTitle = document.getElementById("recipeTitle");
     const ingredientsList = document.getElementById("ingredientsList");
     const instructionsList = document.getElementById("instructionsList");
+	
+	const editBtn = document.getElementById("editBtn");
+	const editBox = document.getElementById("editBox");
+	const editIngredients = document.getElementById("editIngredients");
+	const editInstructions = document.getElementById("editInstructions");
+	const saveEditBtn = document.getElementById("saveEditBtn");
+
+let currentRecipe = null;
 
     async function loadRecipe() {
       if (!recipeId) {
@@ -188,6 +225,8 @@
         }
 
         const recipe = snapshot.data();
+		currentRecipe = recipe;
+		
 
         recipeTitle.textContent = recipe.title || "Untitled Recipe";
 
@@ -221,6 +260,47 @@
     }
 
     loadRecipe();
+	
+	editBtn.addEventListener("click", () => {
+  if (!currentRecipe) return;
+
+  editBox.style.display = "block";
+
+  editIngredients.value = (currentRecipe.ingredients || []).join("\n");
+  editInstructions.value = (currentRecipe.instructions || []).join("\n");
+
+  editBtn.style.display = "none";
+});
+
+saveEditBtn.addEventListener("click", async () => {
+  const ingredients = editIngredients.value
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  const instructions = editInstructions.value
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  saveEditBtn.disabled = true;
+  saveEditBtn.textContent = "Saving...";
+
+  try {
+    await updateDoc(doc(db, "recipes", recipeId), {
+      ingredients,
+      instructions,
+      updatedAt: serverTimestamp()
+    });
+
+    location.reload();
+  } catch (error) {
+    console.error(error);
+    alert("Could not save changes.");
+    saveEditBtn.disabled = false;
+    saveEditBtn.textContent = "Save Changes";
+  }
+});
   </script>
 </body>
 </html>
