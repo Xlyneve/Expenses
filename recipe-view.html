@@ -177,6 +177,10 @@
 
     <section class="card" id="editBox" style="display:none;">
       <h2>Edit Recipe</h2>
+	  
+	  <label>Paste / clean recipe text</label>
+<textarea id="editRawText" placeholder="Paste full recipe text here..."></textarea>
+<button class="back-btn" id="editAutoFormatBtn">Auto-format Text</button>
 
       <label>Title</label>
       <input id="editTitle" placeholder="Recipe title" />
@@ -192,6 +196,8 @@
       <textarea id="editInstructions"></textarea>
 
       <button class="back-btn" id="saveEditBtn">Save Changes</button>
+	  
+	  
     </section>
   </main>
 
@@ -237,6 +243,9 @@
     const editIngredients = document.getElementById("editIngredients");
     const editInstructions = document.getElementById("editInstructions");
     const saveEditBtn = document.getElementById("saveEditBtn");
+	
+	const editRawText = document.getElementById("editRawText");
+	const editAutoFormatBtn = document.getElementById("editAutoFormatBtn");
 
     let currentRecipe = null;
     let newImageBase64 = null;
@@ -264,6 +273,52 @@
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
   });
+}
+	
+	function cleanLine(line) {
+  return line
+    .replace(/^[-•*]\s*/, "")
+    .replace(/^\d+[\).\s-]+/, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function autoFormatRecipe(text) {
+  const lines = text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean);
+
+  let title = lines[0] || "Untitled Recipe";
+  let ingredients = [];
+  let instructions = [];
+
+  function looksLikeInstruction(line) {
+    return /^(add|mix|cook|boil|fry|bake|stir|pour|heat|serve|place|combine|simmer|drain|reduce|bring|cut|chop|slice|toss|garnish|season|plate)\b/i.test(line);
+  }
+
+  function looksLikeIngredient(line) {
+    return (
+      /\b\d+\s?(g|kg|ml|l|cup|cups|tbsp|tsp|tablespoon|teaspoon|pkt|pack|can|clove|cloves|bottle)\b/i.test(line) ||
+      /(salt|pepper|oil|garlic|onion|chicken|beef|pork|fish|egg|flour|sugar|milk|butter|cream|cheese|pesto|spinach|almond|courgette|fettuccine|parmesan|potato|carrot|broccoli)/i.test(line)
+    );
+  }
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = cleanLine(lines[i]);
+    const lower = line.toLowerCase();
+
+    if (!line) continue;
+    if (lower.includes("ingredients") || lower.includes("instructions") || lower.includes("method")) continue;
+
+    if (looksLikeInstruction(line)) {
+      instructions.push(line);
+    } else if (looksLikeIngredient(line)) {
+      ingredients.push(line);
+    }
+  }
+
+  return { title, ingredients, instructions };
 }
 
     async function loadRecipe() {
@@ -332,7 +387,9 @@
       if (!currentRecipe) return;
 
       editBox.style.display = "block";
-
+	  
+	  editRawText.value = currentRecipe.rawText || "";
+	  
       editTitle.value = currentRecipe.title || "";
       editIngredients.value = (currentRecipe.ingredients || []).join("\n");
       editInstructions.value = (currentRecipe.instructions || []).join("\n");
@@ -358,6 +415,21 @@
       editImagePreview.src = newImageBase64;
       editImagePreview.style.display = "block";
     });
+	
+	editAutoFormatBtn.addEventListener("click", () => {
+  const text = editRawText.value.trim();
+
+  if (!text) {
+    alert("Paste recipe text first.");
+    return;
+  }
+
+  const result = autoFormatRecipe(text);
+
+  editTitle.value = result.title || editTitle.value;
+  editIngredients.value = result.ingredients.join("\n");
+  editInstructions.value = result.instructions.join("\n");
+});
 
     saveEditBtn.addEventListener("click", async () => {
       const title = editTitle.value.trim();
@@ -381,15 +453,16 @@
       saveEditBtn.textContent = "Saving...";
 
       const updateData = {
-        title,
-        ingredients,
-        instructions,
-        updatedAt: serverTimestamp()
-      };
+  title,
+  ingredients,
+  instructions,
+  rawText: editRawText.value.trim(),
+  updatedAt: serverTimestamp()
+};
 
-      if (newImageBase64) {
-        updateData.imageBase64 = newImageBase64;
-      }
+if (newImageBase64) {
+  updateData.imageBase64 = newImageBase64;
+}
 
       try {
         await updateDoc(doc(db, "recipes", recipeId), updateData);
