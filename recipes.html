@@ -21,6 +21,25 @@
       gap: 12px;
       margin-bottom: 20px;
     }
+	
+	.recipe-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.recipe-thumb {
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.7);
+}
+
+.recipe-info {
+  flex: 1;
+}
 
     h1 {
       margin: 0;
@@ -178,12 +197,22 @@
         const ingredientCount = recipe.ingredients?.length || 0;
         const stepCount = recipe.instructions?.length || 0;
 
-        card.innerHTML = `
-          <div class="recipe-title">${recipe.title || "Untitled Recipe"}</div>
-          <div class="recipe-meta">
-            ${ingredientCount} ingredients · ${stepCount} steps
-          </div>
-        `;
+        const imageData = recipe.imageBase64 || recipe.photoBase64 || recipe.photoUrl || "";
+
+card.innerHTML = `
+  ${
+    imageData
+      ? `<img class="recipe-thumb" src="${imageData}" alt="">`
+      : `<div class="recipe-thumb"></div>`
+  }
+
+  <div class="recipe-info">
+    <div class="recipe-title">${recipe.title || "Untitled Recipe"}</div>
+    <div class="recipe-meta">
+      ${ingredientCount} ingredients · ${stepCount} steps
+    </div>
+  </div>
+`;
 
         recipeList.appendChild(card);
       });
