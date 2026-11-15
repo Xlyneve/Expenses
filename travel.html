@@ -8,7 +8,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
 <link rel="stylesheet" href="ledger.css?v=20261115-gradient-tab">
-<link rel="stylesheet" href="travel-theme.css?v=20261115-2cards">
+<link rel="stylesheet" href="travel-theme.css?v=20261115-cleanup">
 
 </head>
 <body class="travel-theme">
@@ -19,7 +19,7 @@
 <section class="stats" aria-label="Expense overview"><div class="stat"><span class="stat-label">Total outstanding</span><strong id="travelTotal">—</strong><small>Left to pay</small></div><div class="stat"><span class="stat-label">Active items</span><strong id="activeCount">—</strong><small>On your list</small></div></section>
 <div class="workspace"><details class="add-panel" id="addPanel" open><summary><div class="panel-label">Add a travel expense <span aria-hidden="true">＋</span></div></summary><h2>For the journey</h2><p>Flights, food, a place to stay. Keep it all here.</p><form id="travelForm"><label for="travelName">Item name</label><input type="text" id="travelName" placeholder="What’s the expense?" required><label for="travelCost">Total cost ($)</label><input type="text" id="travelCost" inputmode="decimal" pattern="[0-9]*[.]?[0-9]*" placeholder="0.00" required><label for="travelCategory">Category</label><select id="travelCategory"><option>Food</option><option>Transport</option><option>Hotel</option><option>Shopping</option><option>Activities</option><option>Other</option></select><button type="submit">Add travel item <span aria-hidden="true">↗</span></button></form><div class="panel-note">↳ Payments and progress stay with each item.</div></details>
 <div class="ledger"><section aria-labelledby="activeTitle"><div class="section-heading"><h2 id="activeTitle">On the itinerary</h2><span class="count-tag" id="itemCount">Loading…</span></div><p class="section-note">Enter a payment to update an item. Swipe left to delete.</p><div id="travelActiveList" class="travel-card-list">Loading your travel expenses…</div><div id="activeEmpty" class="empty-state" hidden><span aria-hidden="true">✦</span>Nothing outstanding. Ready for the next adventure.</div></section>
-<details class="history" open><summary>Payment history ↙</summary><div class="paid-heading-row"><span class="section-note" style="margin:0">Partial payments &amp; paid-off items</span><div class="history-actions"><button id="toggleOldPaidBtn" type="button" class="show-old-toggle">Show all</button></div></div><div id="travelPaidCards" class="card-container"></div></details></div></div>
+<details class="history" open><summary>Payment history ↙</summary><div class="paid-heading-row"><span class="section-note" style="margin:0">Partial payments &amp; paid-off items</span><div class="history-actions"><button id="cleanupOldBtn" type="button" class="cleanup-btn">Clean 1yr+</button><button id="toggleOldPaidBtn" type="button" class="show-old-toggle">Show all</button></div></div><div id="travelPaidCards" class="card-container"></div></details></div></div>
 <footer class="footer"><span>Good plans. Clear balances. ↗</span><span id="syncStatus" class="status" role="status">Connecting to your ledger…</span></footer></main>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -460,6 +460,76 @@ travelPaidCards.addEventListener('click', e => {
 
   e.stopPropagation();
   undoLatestPayment(btn.dataset.docId);
+});
+
+async function deleteOldPaidTravelItems() {
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+  const snapshot = await db.collection('travelItems').get();
+
+  const oldPaidDocs = [];
+
+  snapshot.docs.forEach(doc => {
+    const item = doc.data();
+
+    const paid = Number(item.paid) || 0;
+    const cost = Number(item.cost) || 0;
+    const remaining = Math.max(cost - paid, 0);
+    const isFullyPaid = remaining <= 0.001;
+
+    if (!isFullyPaid) return;
+
+    const payments = Array.isArray(item.lastPayments) ? item.lastPayments : [];
+
+    if (!payments.length) return;
+
+    const latestPayment = payments
+      .slice()
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+
+    if (!latestPayment?.date) return;
+
+    const latestDate = new Date(latestPayment.date);
+
+    if (latestDate < oneYearAgo) {
+      oldPaidDocs.push({
+        id: doc.id,
+        name: item.name || 'Untitled',
+        latestDate
+      });
+    }
+  });
+
+  if (oldPaidDocs.length === 0) {
+    alert('No fully paid travel items older than 1 year.');
+    return;
+  }
+
+  const confirmDelete = confirm(
+    `Delete ${oldPaidDocs.length} fully paid travel item(s) older than 1 year?\n\nThis cannot be undone.`
+  );
+
+  if (!confirmDelete) return;
+
+  const batch = db.batch();
+
+  oldPaidDocs.forEach(item => {
+    const ref = db.collection('travelItems').doc(item.id);
+    batch.delete(ref);
+  });
+
+  await batch.commit();
+
+  alert(`Deleted ${oldPaidDocs.length} old paid travel item(s).`);
+}
+
+document.getElementById('cleanupOldBtn').addEventListener('click', async e => {
+  const button = e.currentTarget;
+  button.disabled = true;
+  try { await deleteOldPaidTravelItems(); }
+  catch (error) { console.error('Travel cleanup failed', error); alert('Could not clean old travel entries. Please try again.'); }
+  finally { button.disabled = false; }
 });
 
 toggleOldPaidBtn?.addEventListener('click', () => {

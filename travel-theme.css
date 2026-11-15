@@ -21,8 +21,8 @@
 .travel-theme .travel-card-header{font-weight:800}
 .travel-theme .progress-track{height:10px;border:2px solid var(--ink);border-radius:2px;background:#fffef8}
 .travel-theme .history{border-top:3px solid var(--ink)}
-.travel-theme .show-old-toggle,.travel-theme .undo-payment-btn{border:2px solid var(--ink);border-radius:2px;min-height:44px;font-weight:700;background:#fffef8;padding:9px 12px}
-.travel-theme .show-old-toggle:hover,.travel-theme .undo-payment-btn:hover{background:var(--blue)}
+.travel-theme .cleanup-btn,.travel-theme .show-old-toggle,.travel-theme .undo-payment-btn{border:2px solid var(--ink);border-radius:2px;min-height:44px;font-weight:700;background:#fffef8;padding:9px 12px}
+.travel-theme .cleanup-btn:hover,.travel-theme .show-old-toggle:hover,.travel-theme .undo-payment-btn:hover{background:var(--blue)}
 .travel-theme .empty-state{border:2px dashed var(--ink);border-radius:2px}
 .travel-theme button:focus-visible,.travel-theme a:focus-visible,.travel-theme summary:focus-visible,.travel-theme input:focus-visible,.travel-theme select:focus-visible{outline:3px solid var(--ink);outline-offset:4px;box-shadow:0 0 0 7px var(--blue)}
 .travel-theme .section-note,.travel-theme .paid-progress,.travel-theme .travel-meta,.travel-theme .paid-card-date,.travel-theme .paid-card-payments,.travel-theme .status{color:#49493f}
