@@ -1,0 +1,30 @@
+/* Travel's graphic palette and heavier typography distinguish it from Expenses. */
+.travel-theme{--paper:#f5f1de;--ink:#111;--pink:#00b7bd;--blue:#ffda24;font-family:Arial,Helvetica,sans-serif;background:var(--paper)}
+.travel-theme .topbar{border-bottom:3px solid var(--ink)}
+.travel-theme .brand{font-weight:900;letter-spacing:1px}
+.travel-theme h1,.travel-theme h2,.travel-theme .history summary{font-family:Arial,Helvetica,sans-serif;font-weight:900;text-transform:uppercase;letter-spacing:-1.5px}
+.travel-theme h1{font-size:clamp(64px,8vw,100px);letter-spacing:-5px}
+.travel-theme .eyebrow{font-weight:800;letter-spacing:1.5px}
+.travel-theme .hero p:last-child{color:#292922}
+.travel-theme .stat,.travel-theme .add-panel,.travel-theme .travel-card,.travel-theme .paid-card,.travel-theme .paid-card.recent-paid{border:3px solid var(--ink);border-radius:2px;box-shadow:5px 5px 0 var(--ink)}
+.travel-theme .stat strong{font-weight:900;font-size:36px;letter-spacing:-1.5px}
+.travel-theme .stat-label{font-weight:900;letter-spacing:1px}
+.travel-theme .stat:nth-child(3){background:#fffef8}
+.travel-theme .panel-label{border-bottom:3px solid var(--ink);background:var(--blue);font-weight:900;letter-spacing:1px}
+.travel-theme .add-panel h2{font-family:Arial,Helvetica,sans-serif;font-size:27px;font-weight:900;letter-spacing:-1px}
+.travel-theme input,.travel-theme select{border:2px solid var(--ink);border-radius:2px;background:#fffef8}
+.travel-theme form button{border:2px solid var(--ink);border-radius:2px;background:var(--pink);color:var(--ink);font-weight:900;box-shadow:3px 3px 0 var(--ink);min-height:44px}
+.travel-theme nav a[aria-current]{border:2px solid var(--ink);border-radius:2px;background:var(--pink);font-weight:800}
+.travel-theme .receipt{border:3px solid var(--ink);box-shadow:6px 6px 0 var(--ink);transform:rotate(5deg)}
+.travel-theme .receipt span{font-family:Arial,Helvetica,sans-serif;font-weight:900}
+.travel-theme .travel-category,.travel-theme .paid-card-status,.travel-theme .paid-today-badge,.travel-theme .count-tag{border:2px solid var(--ink);border-radius:2px;font-weight:800}
+.travel-theme .travel-card-header{font-weight:800}
+.travel-theme .progress-track{height:10px;border:2px solid var(--ink);border-radius:2px;background:#fffef8}
+.travel-theme .history{border-top:3px solid var(--ink)}
+.travel-theme .show-old-toggle,.travel-theme .undo-payment-btn{border:2px solid var(--ink);border-radius:2px;min-height:44px;font-weight:700;background:#fffef8;padding:9px 12px}
+.travel-theme .show-old-toggle:hover,.travel-theme .undo-payment-btn:hover{background:var(--blue)}
+.travel-theme .empty-state{border:2px dashed var(--ink);border-radius:2px}
+.travel-theme button:focus-visible,.travel-theme a:focus-visible,.travel-theme summary:focus-visible,.travel-theme input:focus-visible,.travel-theme select:focus-visible{outline:3px solid var(--ink);outline-offset:4px;box-shadow:0 0 0 7px var(--blue)}
+.travel-theme .section-note,.travel-theme .paid-progress,.travel-theme .travel-meta,.travel-theme .paid-card-date,.travel-theme .paid-card-payments,.travel-theme .status{color:#49493f}
+@media(max-width:760px){.travel-theme h1{font-size:68px}.travel-theme .stat strong{font-size:31px}.travel-theme h2{font-size:27px}.travel-theme .history summary{font-size:25px}.travel-theme .receipt{box-shadow:4px 4px 0 var(--ink)}}
+@media(max-width:420px){.travel-theme h1{font-size:clamp(48px,15vw,60px)}.travel-theme .brand{font-size:10px;letter-spacing:.5px}.travel-theme .stat:first-child strong{font-size:30px}.travel-theme .stat{padding:14px}.travel-theme .travel-card{padding:17px}.travel-theme .stat-label{font-size:9px}.travel-theme .travel-card-header{font-size:17px}}
