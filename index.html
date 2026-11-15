@@ -2,478 +2,24 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Credit Card Expenses</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
-<style>
-  @font-face { font-family: 'LovelyCoffee'; src: url('LovelyCoffee.ttf') format('truetype'); }
-  @font-face { font-family: 'LouisGeorgeCafe'; src: url('LouisGeorgeCafe.ttf') format('truetype'); }
-
-  body {
-    font-family: 'LouisGeorgeCafe', sans-serif;
-    background: url('watercolor.png') no-repeat center center fixed;
-    background-size: cover;
-    margin: 0;
-    padding: 0;
-    color: #333;
-  }
-
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background: rgba(255,255,255,0.88);
-    backdrop-filter: blur(20px);
-    z-index: -1;
-  }
-
-  h1 {
-    font-family: 'LovelyCoffee', cursive;
-    font-size: 50px;
-    text-align: center;
-    margin: 18px 0;
-  }
-
-  form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 15px;
-    margin: 0 auto;
-    max-width: 400px;
-  }
-
-  input[type="text"], input[type="number"] {
-    padding: 14px;
-    font-size: 16px;
-    border-radius: 12px;
-    border: 1px solid #ccc;
-    background: #fff;
-	  color: #000;
-  }
-
-  button {
-    padding: 10px 10px;
-    font-size: 16px;
-    border-radius: 12px;
-    border: none;
-    cursor: pointer;
-    background: #cbc4d6;
-    color: black;
-    font-weight: 600;
-    transition: opacity 0.2s;
-  }
-  button:hover { opacity: 0.85; }
-
-  /* Active Cards - Glassy */
-  #itemsTable {
-    display: flex;
-    flex-direction: column;
-    gap: 12px; /* space between cards */
-    padding: 8px;
-  }
-
-  #itemsTable tr.active-card-row {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 12px;
-    background: rgba(255,255,255,0.25);
-    backdrop-filter: blur(20px) saturate(180%);
-    border-radius: 16px;
-    font-size: 16px;
-    border: 1px solid rgba(255,255,255,0.3);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    margin-bottom: 8px;
-    cursor: grab;
-  }
-
-  #itemsTable tr.active-card-row.transferred {
-    background: rgba(208,160,163,0.3);
-  }
-  
-
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    font-weight: bold;
-    font-size: 16px;
-  }
-
-  /* Bottom row: input left, remaining right */
-  .card-bottom {
-    display: flex;
-    justify-content: space-between; /* space between input and remaining */
-    align-items: center;
-    margin-top: 6px;
-    gap: 12px; /* editable space between input and remaining */
-  }
-
-  .card-bottom input {
-    width: 80px;        /* editable input width */
-    padding: 6px 8px;
-    font-size: 16px;    /* editable font size */
-    border-radius: 8px;
-    border: 1px solid rgba(255,255,255,0.5);
-    background: rgba(255,255,255,0.3);
-	  color: #000;
-    outline: none;
-  }
-
-  .card-bottom .remaining {
-    font-weight: regular;
-    font-size: 14px;    /* editable font size for remaining cost */
-    min-width: 80px;
-    text-align: right;  /* align remaining to the right */
-  }
-
-  .card-bottom button {
-    font-size: 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 2px 4px;
-    transition: transform 0.2s;
-  }
-  .card-bottom button:hover { transform: scale(1.2); }
-
-  .card-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 8px;
-    justify-content: center;
-  }
-  
-  .paid-heading-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-
-  padding: 0 10px;
-  margin-top: 12px;
-}
-
-.paid-heading-row h2 {
-  margin: 0;
-}
-
-.cleanup-btn {
-  padding: 7px 10px;
-  border-radius: 999px;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  background: rgba(255,255,255,0.32);
-  border: 1px solid rgba(255,255,255,0.45);
-
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
-
-.paid-today-badge {
-  display: inline-block;
-  width: fit-content;
-  margin-left: 6px;
-
-  padding: 3px 8px;
-  border-radius: 999px;
-
-  font-size: 10px;
-  font-weight: 800;
-
-  background: rgba(255, 255, 190, 0.72);
-  border: 1px solid rgba(255,255,255,0.65);
-
-  box-shadow:
-    0 0 10px rgba(255, 245, 160, 0.75),
-    inset 0 1px 0 rgba(255,255,255,0.75);
-}
-
-.undo-payment-btn {
-  width: 100%;
-  margin-top: 9px;
-  padding: 7px 9px;
-
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-
-  background: rgba(255,255,255,0.34);
-  border: 1px solid rgba(255,255,255,0.55);
-
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.show-old-toggle {
-  padding: 7px 10px;
-  border-radius: 999px;
-
-  font-size: 12px;
-  font-weight: 700;
-
-  background: rgba(255,255,255,0.32);
-  border: 1px solid rgba(255,255,255,0.45);
-
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
-
-.paid-progress {
-  font-size: 13px;
-  opacity: 0.75;
-  margin-top: -2px;
-}
-
-  .paid-card {
-  flex: 1 1 180px;
-  min-width: 170px;
-
-  background: rgba(255,255,255,0.30);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-
-  border-radius: 16px;
-  padding: 12px;
-
-  font-size: 14px;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.08);
-  border: 1px solid rgba(255,255,255,0.35);
-
-  position: relative;
-}
-
-.paid-card.recent-paid {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 218, 205, 0.58),
-    rgba(226, 218, 255, 0.50)
-  );
-
-  border: 1px solid rgba(255,255,255,0.65);
-
-  box-shadow:
-    0 3px 12px rgba(0,0,0,0.08),
-    0 0 16px rgba(255, 190, 170, 0.55),
-    0 0 28px rgba(190, 180, 255, 0.35);
-}
-
-.paid-card-name {
-  font-weight: 800;
-  font-size: 15px;
-  margin-bottom: 6px;
-  overflow-wrap: anywhere;
-}
-
-.paid-card-status {
-  display: inline-block;
-  width: fit-content;
-
-  padding: 3px 8px;
-  border-radius: 999px;
-
-  font-size: 11px;
-  font-weight: 700;
-
-  background: rgba(255,255,255,0.45);
-  border: 1px solid rgba(255,255,255,0.45);
-
-  margin-bottom: 8px;
-}
-
-.paid-card-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-
-  font-size: 13px;
-  margin-top: 4px;
-}
-
-.paid-card-label {
-  opacity: 0.65;
-}
-
-.paid-card-value {
-  font-weight: 700;
-  text-align: right;
-}
-
-.paid-card-date {
-  margin-top: 7px;
-  font-size: 12px;
-  color: #666;
-}
-
-.paid-card-payments {
-  margin-top: 8px;
-  padding-top: 7px;
-  border-top: 1px solid rgba(255,255,255,0.35);
-
-  font-size: 12px;
-  color: #666;
-  line-height: 1.4;
-}
-
- #total {
-  font-weight: bold;
-  font-size: 16px;
-  text-align: center;
-  padding: 16px;
-
-  background: rgba(236, 235, 232, 0.95);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.55);
-
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.08),
-    0 0 16px rgba(255,255,255,0.35);
-
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 400px;
-  z-index: 999;
-
-  transition: background 180ms ease, box-shadow 180ms ease;
-}
-
-#total.total-clear {
-  background: linear-gradient(
-    135deg,
-    rgba(205, 240, 210, 0.96),
-    rgba(230, 255, 235, 0.94)
-  );
-
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.08),
-    0 0 18px rgba(160, 230, 170, 0.65);
-}
-
-#total.total-low {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 248, 198, 0.96),
-    rgba(255, 236, 205, 0.94)
-  );
-
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.08),
-    0 0 18px rgba(255, 230, 150, 0.65);
-}
-
-#total.total-high {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 218, 205, 0.96),
-    rgba(255, 205, 226, 0.94)
-  );
-
-  box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.08),
-    0 0 18px rgba(255, 170, 190, 0.60);
-}
-
-/* Add space at bottom so last items are not hidden behind total bar */
-#itemsTable, #paidCards {
-    padding-bottom: 80px; /* adjust if needed */
-}
-
-.travel-fab {
-  position: fixed;
-  right: 16px;
-  top: 16px;
-  z-index: 1200;
-
-  width: 54px;
-  height: 54px;
-  border-radius: 50%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 25px;
-  text-decoration: none;
-
-  background: rgba(255,255,255,0.38);
-  border: 1px solid rgba(255,255,255,0.6);
-
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-
-  box-shadow:
-    0 6px 18px rgba(0,0,0,0.12),
-    inset 0 1px 0 rgba(255,255,255,0.75);
-}
-
-.travel-fab:hover {
-  opacity: 0.9;
-}
-
-</style>
+<link rel="stylesheet" href="ledger.css">
 
 </head>
 <body>
 
-<h1>💳 Credit Card Expenses</h1>
-
-<form id="itemForm">
-  <input type="text" id="itemName" placeholder="Item Name" required>
-  <input 
-  type="text" 
-  id="itemCost" 
-  inputmode="decimal" 
-  pattern="[0-9]*[.]?[0-9]*" 
-  placeholder="Cost" 
-  required
->
-  <button type="submit">Add Item</button>
-</form>
-
-
-<h2>Active Items</h2>
-<table id="itemsTable"><tbody></tbody></table>
-
-<div class="paid-heading-row">
-  <h2>Fully Paid Items</h2>
-
-  <div style="display:flex; gap:8px;">
-    <button id="toggleOldPaidBtn" type="button" class="show-old-toggle">
-      Show all
-    </button>
-
-    <button id="cleanupOldBtn" type="button" class="cleanup-btn">
-      Clean 1yr+
-    </button>
-  </div>
-</div>
-
-<div id="paidCards" class="card-container"></div>
-
-<div id="total">Total Remaining: $0.00</div>
-
-<a href="travel.html" class="travel-fab" title="Travel Expenses">
-  ✈️
-</a>
-
-<div class="bottom-nav">
-</div>
-
+<main class="shell">
+<header class="topbar"><div class="brand"><span aria-hidden="true">✳</span> Everyday ledger</div><nav aria-label="Main navigation"><a href="index.html" aria-current="page">Expenses</a><a href="recipes.html">Recipes</a><a href="travel.html">Travel ↗</a></nav></header>
+<section class="hero" aria-labelledby="pageTitle"><div><p class="eyebrow">Your personal credit card tracker</p><h1 id="pageTitle">Expenses<span class="title-dot">.</span></h1><p>A little organisation. A clearer picture.</p></div><span class="hero-star" aria-hidden="true">✦</span><div class="receipt" aria-hidden="true"><small>THE LEDGER</small><span>↗</span><i></i><i></i><small>KEEP IT SIMPLE</small></div></section>
+<section class="stats" aria-label="Expense overview"><div class="stat"><span class="stat-label">Total outstanding</span><strong id="total">—</strong><small>Left to pay</small></div><div class="stat"><span class="stat-label">Paid so far</span><strong id="paidTotal">—</strong><small>Across your saved items</small></div><div class="stat"><span class="stat-label">Active items</span><strong id="activeCount">—</strong><small>On your list</small></div></section>
+<div class="workspace"><details class="add-panel" id="addPanel" open><summary><div class="panel-label">Add an expense <span aria-hidden="true">＋</span></div></summary><h2>A new entry</h2><p>Pop it on the list. Chip away at it.</p><form id="itemForm"><label for="itemName">Item name</label><input type="text" id="itemName" placeholder="What’s the expense?" required><label for="itemCost">Total cost ($)</label><input type="text" id="itemCost" inputmode="decimal" pattern="[0-9]*[.]?[0-9]*" placeholder="0.00" required><button type="submit">Add expense <span aria-hidden="true">↗</span></button></form><div class="panel-note">↳ Payments and progress stay with each item.</div></details>
+<div class="ledger"><section aria-labelledby="activeTitle"><div class="section-heading"><h2 id="activeTitle">On the list</h2><span class="count-tag" id="itemCount">Loading…</span></div><p class="section-note">Enter a payment to update an item. Swipe left to delete.</p><table id="itemsTable" aria-label="Active expenses"><tbody><tr><td>Loading your expenses…</td></tr></tbody></table><div id="activeEmpty" class="empty-state" hidden><span aria-hidden="true">✦</span>Nothing outstanding. A clean slate.</div></section>
+<details class="history" open><summary>Payment history ↙</summary><div class="paid-heading-row"><span class="section-note" style="margin:0">Partial payments &amp; paid-off items</span><div class="history-actions"><button id="toggleOldPaidBtn" type="button" class="show-old-toggle">Show all</button><button id="cleanupOldBtn" type="button" class="cleanup-btn">Clean 1yr+</button></div></div><div id="paidCards" class="card-container"></div></details></div></div>
+<footer class="footer"><span>Small steps. Less owing. ✦</span><span id="syncStatus" class="status" role="status">Connecting to your ledger…</span></footer></main>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
@@ -499,6 +45,11 @@ const toggleOldPaidBtn = document.getElementById('toggleOldPaidBtn');
 const totalDiv = document.getElementById('total');
 
 let showAllPaidItems = false;
+const addPanel = document.getElementById('addPanel');
+const mobileLayout = window.matchMedia('(max-width:760px)');
+addPanel.open = !mobileLayout.matches;
+mobileLayout.addEventListener('change', e => { addPanel.open = !e.matches; });
+addPanel.addEventListener('toggle', () => { if (!mobileLayout.matches) addPanel.open = true; });
 
 // Add new item
 form.addEventListener('submit', e => {
@@ -546,7 +97,7 @@ function makeSwipeToDelete(element, docId, name) {
 
 // Format Firestore timestamp
 function formatDate(ts){
-  if(ts.toDate) ts = ts.toDate(); 
+  if(ts.toDate) ts = ts.toDate();
   const d = new Date(ts);
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
@@ -588,14 +139,14 @@ function renderActiveItems(items){
     const remaining = Math.max(cost - paid, 0);
     const isFullyPaid = cost - paid <= 0.001;
 
-    const tr = document.createElement('tr'); 
+    const tr = document.createElement('tr');
     tr.classList.add('active-card-row');
     if(item.transferred) tr.classList.add('transferred');
 
     // Header: store name + cost
-    const headerDiv = document.createElement('div'); 
+    const headerDiv = document.createElement('div');
     headerDiv.classList.add('card-header');
-    headerDiv.innerHTML = `<span>${item.name}</span><span>Cost: $${cost.toFixed(2)}</span>`;
+    headerDiv.innerHTML = `<span>${escapeHtml(item.name || "Untitled")}</span><span>Cost: $${cost.toFixed(2)}</span>`;
     tr.appendChild(headerDiv);
 
     // Input + Remaining line
@@ -606,7 +157,8 @@ function renderActiveItems(items){
 	inputDiv.type = 'text';
 	inputDiv.inputMode = 'decimal';
 	inputDiv.pattern = '[0-9]*[.]?[0-9]*';
-	inputDiv.placeholder = '0.00';
+	inputDiv.placeholder = 'Pay $';
+inputDiv.setAttribute('aria-label', 'Payment for ' + (item.name || 'Untitled'));
 	inputDiv.disabled = isFullyPaid;
     bottomDiv.appendChild(inputDiv);
 
@@ -621,6 +173,13 @@ const paidProgressDiv = document.createElement('div');
 paidProgressDiv.classList.add('paid-progress');
 paidProgressDiv.textContent = `Paid so far: $${paid.toFixed(2)} / $${cost.toFixed(2)}`;
 tr.appendChild(paidProgressDiv);
+const progress = document.createElement('div');
+progress.className = 'progress-track';
+const fill = document.createElement('div');
+fill.className = 'progress-fill';
+fill.style.width = (cost > 0 ? Math.min(100, Math.max(0, paid / cost * 100)) : 100) + '%';
+progress.appendChild(fill);
+tr.appendChild(progress);
 
     // Timestamp + transfer button line
     const tsDiv = document.createElement('div');
@@ -636,14 +195,17 @@ tr.appendChild(paidProgressDiv);
     tsDiv.appendChild(timestamp);
 
     const transferBtn = document.createElement('button');
-    transferBtn.textContent = item.transferred?'💰':'👜';
+    transferBtn.className = 'transfer-button';
+transferBtn.textContent = item.transferred?'Transferred ✓':'Mark transferred ↗';
+transferBtn.setAttribute('aria-pressed', String(!!item.transferred));
     transferBtn.title='Mark as transferred';
     transferBtn.style.fontSize = '18px';
     transferBtn.addEventListener('click', ()=>{
       const newTransferred = !item.transferred;
       db.collection('items').doc(id).update({transferred:newTransferred});
       tr.classList.toggle('transferred', newTransferred);
-      transferBtn.textContent = newTransferred?'💰':'👜';
+      transferBtn.textContent = newTransferred?'Transferred ✓':'Mark transferred ↗';
+transferBtn.setAttribute('aria-pressed', String(newTransferred));
     });
     tsDiv.appendChild(transferBtn);
 
@@ -668,7 +230,7 @@ tr.appendChild(paidProgressDiv);
     totalRemaining += remaining;
   });
 
-  totalDiv.textContent = `Total Remaining: $${totalRemaining.toFixed(2)}`;
+  totalDiv.textContent = `$${totalRemaining.toFixed(2)}`;
 
 totalDiv.classList.remove('total-clear', 'total-low', 'total-high');
 
@@ -748,7 +310,7 @@ function renderPaidCards(items){
       </div>
 
       <div class="paid-card-status">
-        ${isFullyPaid ? 'Fully paid' : 'Part paid'}
+        ${isFullyPaid ? 'Paid ✓' : 'Part paid'}
       </div>
 
       <div class="paid-card-row">
@@ -935,7 +497,17 @@ db.collection('items').orderBy('createdAt').onSnapshot(snapshot=>{
   });
 
   renderActiveItems(activeItems);
-renderPaidCards(snapshot.docs);
+  renderPaidCards(snapshot.docs);
+  document.getElementById('activeCount').textContent = activeItems.length;
+  document.getElementById('itemCount').textContent = activeItems.length + (activeItems.length === 1 ? ' item' : ' items');
+  document.getElementById('activeEmpty').hidden = activeItems.length !== 0;
+  const totalPaid = snapshot.docs.reduce((sum, doc) => sum + (Number(doc.data().paid) || 0), 0);
+  document.getElementById('paidTotal').textContent = '$' + totalPaid.toFixed(2);
+  document.getElementById('syncStatus').textContent = '✓ Ledger up to date';
+}, error => {
+  document.getElementById('syncStatus').textContent = 'Unable to load expenses. Please refresh to try again.';
+  itemsTableBody.innerHTML = '<tr><td>Could not load your expenses.</td></tr>';
+  console.error('Expense sync failed', error);
 });
 </script>
 
