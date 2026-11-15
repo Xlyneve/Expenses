@@ -9,7 +9,7 @@
 .travel-theme .stat,.travel-theme .add-panel,.travel-theme .travel-card,.travel-theme .paid-card,.travel-theme .paid-card.recent-paid{border:3px solid var(--ink);border-radius:2px;box-shadow:5px 5px 0 var(--ink)}
 .travel-theme .stat strong{font-weight:900;font-size:36px;letter-spacing:-1.5px}
 .travel-theme .stat-label{font-weight:900;letter-spacing:1px}
-.travel-theme .stat:nth-child(3){background:#fffef8}
+.travel-theme .stat:nth-child(2){background:var(--blue)}
 .travel-theme .panel-label{border-bottom:3px solid var(--ink);background:var(--blue);font-weight:900;letter-spacing:1px}
 .travel-theme .add-panel h2{font-family:Arial,Helvetica,sans-serif;font-size:27px;font-weight:900;letter-spacing:-1px}
 .travel-theme input,.travel-theme select{border:2px solid var(--ink);border-radius:2px;background:#fffef8}
