@@ -17,4 +17,4 @@ body:not(.travel-theme) .panel-label{background:linear-gradient(110deg,var(--blu
 
 body:not(.travel-theme) #total{font-weight:700}
 
-.title-suffix{display:block;font-size:.5em;letter-spacing:-1px;margin-top:12px}h1:has(.title-suffix)>.title-dot{display:none}
+.title-suffix{display:inline}body:not(.travel-theme) #pageTitle{white-space:nowrap;font-size:clamp(20px,5.4vw,70px);letter-spacing:-.04em}body:not(.travel-theme) .hero>div:first-child{min-width:0}
