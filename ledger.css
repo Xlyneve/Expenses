@@ -16,3 +16,5 @@ select{font:inherit;font-size:16px;background:#fffef7;border:1.5px solid var(--i
 body:not(.travel-theme) .panel-label{background:linear-gradient(110deg,var(--blue) 0%,#c4a9cd 52%,var(--pink) 100%);border-radius:6px 6px 0 0}body:not(.travel-theme) .add-panel:not([open]) .panel-label{border-radius:6px}
 
 body:not(.travel-theme) #total{font-weight:700}
+
+.title-suffix{display:block;font-size:.5em;letter-spacing:-1px;margin-top:12px}h1:has(.title-suffix)>.title-dot{display:none}

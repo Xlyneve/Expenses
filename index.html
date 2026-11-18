@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Credit Card Expenses</title>
+<title>Expenses - To PAY</title>
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
-<link rel="stylesheet" href="ledger.css?v=20261118-bold-total">
+<link rel="stylesheet" href="ledger.css?v=20261118-to-pay">
 
 </head>
 <body>
 
 <main class="shell">
 <header class="topbar"><div class="brand"><span aria-hidden="true">✳</span> Everyday ledger</div><nav aria-label="Main navigation"><a href="index.html" aria-current="page">Expenses</a><a href="travel.html">Travel ↗</a></nav></header>
-<section class="hero" aria-labelledby="pageTitle"><div><p class="eyebrow">Your personal credit card tracker</p><h1 id="pageTitle">Expenses<span class="title-dot">.</span></h1><p>A little organisation. A clearer picture.</p></div><span class="hero-star" aria-hidden="true">✦</span><div class="receipt" aria-hidden="true"><small>THE LEDGER</small><span>↗</span><i></i><i></i><small>KEEP IT SIMPLE</small></div></section>
+<section class="hero" aria-labelledby="pageTitle"><div><p class="eyebrow">Your personal credit card tracker</p><h1 id="pageTitle">Expenses <span class="title-suffix">- To PAY</span><span class="title-dot">.</span></h1><p>A little organisation. A clearer picture.</p></div><span class="hero-star" aria-hidden="true">✦</span><div class="receipt" aria-hidden="true"><small>THE LEDGER</small><span>↗</span><i></i><i></i><small>KEEP IT SIMPLE</small></div></section>
 <section class="stats" aria-label="Expense overview"><div class="stat"><span class="stat-label">Total outstanding</span><strong id="total">—</strong><small>Left to pay</small></div><div class="stat"><span class="stat-label">Active items</span><strong id="activeCount">—</strong><small>On your list</small></div></section>
 <div class="workspace"><details class="add-panel" id="addPanel" open><summary><div class="panel-label">Add an expense <span aria-hidden="true">＋</span></div></summary><h2>A new entry</h2><p>Pop it on the list. Chip away at it.</p><form id="itemForm"><label for="itemName">Item name</label><input type="text" id="itemName" placeholder="What’s the expense?" required><label for="itemCost">Total cost ($)</label><input type="text" id="itemCost" inputmode="decimal" pattern="[0-9]*[.]?[0-9]*" placeholder="0.00" required><button type="submit">Add expense <span aria-hidden="true">↗</span></button></form><div class="panel-note">↳ Payments and progress stay with each item.</div></details>
 <div class="ledger"><section aria-labelledby="activeTitle"><div class="section-heading"><h2 id="activeTitle">On the list</h2><span class="count-tag" id="itemCount">Loading…</span></div><p class="section-note">Enter a payment to update an item. Swipe left to delete.</p><table id="itemsTable" aria-label="Active expenses"><tbody><tr><td>Loading your expenses…</td></tr></tbody></table><div id="activeEmpty" class="empty-state" hidden><span aria-hidden="true">✦</span>Nothing outstanding. A clean slate.</div></section>
